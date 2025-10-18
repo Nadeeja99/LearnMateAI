@@ -182,6 +182,18 @@ const AppPage = () => {
               </Button>
               
               <Button
+                variant={activeTab === "voice" ? "default" : "ghost"}
+                className="w-full justify-start"
+                onClick={() => {
+                  setActiveTab("voice");
+                  if (isMobile) setSidebarOpen(false);
+                }}
+              >
+                <Mic className="h-4 w-4 mr-3" />
+                Voice Chat
+              </Button>
+              
+              <Button
                 variant={activeTab === "quiz" ? "default" : "ghost"}
                 className="w-full justify-start"
                 onClick={() => {
@@ -191,18 +203,6 @@ const AppPage = () => {
               >
                 <HelpCircle className="h-4 w-4 mr-3" />
                 Create Quiz
-              </Button>
-              
-              <Button
-                variant={activeTab === "documents" ? "default" : "ghost"}
-                className="w-full justify-start"
-                onClick={() => {
-                  setActiveTab("documents");
-                  if (isMobile) setSidebarOpen(false);
-                }}
-              >
-                <FolderOpen className="h-4 w-4 mr-3" />
-                My Documents
               </Button>
               
               <Button
@@ -218,15 +218,15 @@ const AppPage = () => {
               </Button>
               
               <Button
-                variant={activeTab === "voice" ? "default" : "ghost"}
+                variant={activeTab === "documents" ? "default" : "ghost"}
                 className="w-full justify-start"
                 onClick={() => {
-                  setActiveTab("voice");
+                  setActiveTab("documents");
                   if (isMobile) setSidebarOpen(false);
                 }}
               >
-                <Mic className="h-4 w-4 mr-3" />
-                Voice Chat
+                <FolderOpen className="h-4 w-4 mr-3" />
+                My Documents
               </Button>
             </div>
 
@@ -259,6 +259,7 @@ const AppPage = () => {
               <DocumentsView 
                 documents={documents} 
                 onDelete={handleDeleteDocument}
+                onNavigateToChat={() => setActiveTab("chat")}
               />
             )}
             {activeTab === "analytics" && <AnalyticsDashboard />}

@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { BookOpen, MessageSquare, FileText, HelpCircle, Upload, ArrowRight, Sparkles, Zap, Shield } from "lucide-react";
+import { BookOpen, MessageSquare, FileText, HelpCircle, Upload, ArrowRight, Sparkles, Zap, Shield, Mic } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const Landing = () => {
@@ -16,6 +16,11 @@ const Landing = () => {
       icon: MessageSquare,
       title: "Smart Chat",
       description: "Ask questions and get instant, contextual answers",
+    },
+    {
+      icon: Mic,
+      title: "Voice Chat",
+      description: "Talk naturally with your documents using voice interaction",
     },
     {
       icon: FileText,
@@ -38,7 +43,7 @@ const Landing = () => {
     {
       number: "02",
       title: "Ask Questions Naturally",
-      description: "Chat with your documents like talking to a tutor",
+      description: "Chat with your documents using text or voice like talking to a tutor",
     },
     {
       number: "03",
@@ -66,7 +71,7 @@ const Landing = () => {
             
             <p className="text-xl md:text-2xl text-muted-foreground mb-12 max-w-2xl mx-auto">
               Upload your study materials and get instant answers, summaries, and quizzes. 
-              Learning has never been this smart.
+              Chat with your documents using text or voice - learning has never been this smart.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -107,7 +112,7 @@ const Landing = () => {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 max-w-7xl mx-auto">
           {features.map((feature, index) => (
             <Card 
               key={index}
@@ -156,6 +161,89 @@ const Landing = () => {
                 )}
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Voice Chat Feature Highlight */}
+      <section className="py-20 md:py-32 container mx-auto px-4">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div className="animate-fade-up">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6">
+                <Mic className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">New Feature</span>
+              </div>
+              
+              <h2 className="text-3xl md:text-5xl font-bold mb-6">
+                Talk to Your Documents
+              </h2>
+              
+              <p className="text-xl text-muted-foreground mb-8">
+                Experience the future of learning with our revolutionary voice chat feature. 
+                Simply speak your questions and get instant voice responses from your documents.
+              </p>
+              
+              <div className="space-y-4 mb-8">
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 rounded-full bg-primary" />
+                  <span className="text-muted-foreground">Natural voice conversation with AI</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 rounded-full bg-primary" />
+                  <span className="text-muted-foreground">Real-time speech-to-text and text-to-speech</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 rounded-full bg-primary" />
+                  <span className="text-muted-foreground">Continuous listening for hands-free interaction</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 rounded-full bg-primary" />
+                  <span className="text-muted-foreground">Perfect for accessibility and multitasking</span>
+                </div>
+              </div>
+              
+              <Button 
+                size="lg" 
+                className="text-lg px-8 py-6 bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-opacity"
+                onClick={() => navigate("/app")}
+              >
+                Try Voice Chat Now
+                <Mic className="ml-2 h-5 w-5" />
+              </Button>
+            </div>
+            
+            <div className="relative animate-fade-up" style={{ animationDelay: "0.2s" }}>
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-3xl blur-3xl" />
+                <Card className="relative p-8 bg-card/80 backdrop-blur-sm border-border">
+                  <div className="text-center space-y-6">
+                    <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center mx-auto">
+                      <Mic className="h-10 w-10 text-white" />
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <div className="p-4 rounded-lg bg-muted/50 border border-border">
+                        <p className="text-sm text-muted-foreground mb-2">You said:</p>
+                        <p className="text-foreground">"Explain the main concepts in chapter 3"</p>
+                      </div>
+                      
+                      <div className="flex items-center justify-center">
+                        <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20">
+                          <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+                          <span className="text-sm text-primary">AI is responding...</span>
+                        </div>
+                      </div>
+                      
+                      <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
+                        <p className="text-sm text-muted-foreground mb-2">AI Response:</p>
+                        <p className="text-foreground">"Chapter 3 covers advanced algorithms and their applications in modern computing..."</p>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              </div>
+            </div>
           </div>
         </div>
       </section>

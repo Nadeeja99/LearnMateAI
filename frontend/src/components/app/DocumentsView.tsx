@@ -8,9 +8,10 @@ import { useToast } from "@/hooks/use-toast";
 interface DocumentsViewProps {
   documents: string[];
   onDelete: (filename: string) => void;
+  onNavigateToChat?: () => void;
 }
 
-const DocumentsView = ({ documents, onDelete }: DocumentsViewProps) => {
+const DocumentsView = ({ documents, onDelete, onNavigateToChat }: DocumentsViewProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const { toast } = useToast();
@@ -18,6 +19,18 @@ const DocumentsView = ({ documents, onDelete }: DocumentsViewProps) => {
   const filteredDocuments = documents.filter(doc =>
     doc.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const handleChatClick = () => {
+    if (onNavigateToChat) {
+      onNavigateToChat();
+    } else {
+      toast({
+        title: "Navigation not available",
+        description: "Please navigate to chat manually",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleDelete = async (filename: string) => {
     if (window.confirm(`Are you sure you want to delete "${filename}"?`)) {
@@ -140,7 +153,7 @@ const DocumentsView = ({ documents, onDelete }: DocumentsViewProps) => {
               </div>
               
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" className="flex-1">
+                <Button variant="outline" size="sm" className="flex-1" onClick={handleChatClick}>
                   <MessageSquare className="h-3 w-3 mr-2" />
                   Chat
                 </Button>
@@ -167,7 +180,7 @@ const DocumentsView = ({ documents, onDelete }: DocumentsViewProps) => {
                 </div>
                 
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" onClick={handleChatClick}>
                     <MessageSquare className="h-4 w-4 mr-2" />
                     Chat
                   </Button>
