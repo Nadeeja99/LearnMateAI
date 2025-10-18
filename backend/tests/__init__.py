@@ -1,1 +1,0 @@
-# LearnMate AI Backend Tests
