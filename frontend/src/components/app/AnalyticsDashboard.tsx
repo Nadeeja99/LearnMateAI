@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import API_CONFIG from "@/lib/api";
 import { 
   BarChart3, 
   TrendingUp, 
@@ -61,14 +62,14 @@ const AnalyticsDashboard = () => {
     setIsLoading(true);
     try {
       // Load user analytics
-      const userResponse = await fetch("http://localhost:8000/analytics/user/default");
+      const userResponse = await fetch(API_CONFIG.ENDPOINTS.ANALYTICS_USER("default"));
       if (userResponse.ok) {
         const userData = await userResponse.json();
         setUserAnalytics(userData);
       }
 
       // Load global analytics
-      const globalResponse = await fetch("http://localhost:8000/analytics/global");
+      const globalResponse = await fetch(API_CONFIG.ENDPOINTS.ANALYTICS_GLOBAL);
       if (globalResponse.ok) {
         const globalData = await globalResponse.json();
         setGlobalAnalytics(globalData);

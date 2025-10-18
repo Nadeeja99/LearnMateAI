@@ -6,6 +6,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Loader2, HelpCircle, CheckCircle, XCircle, RotateCcw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import API_CONFIG from "@/lib/api";
 
 interface QuizViewProps {
   documents: string[];
@@ -49,12 +50,12 @@ const QuizView = ({ documents }: QuizViewProps) => {
     
     try {
       // Get current session documents from backend
-      const sessionResponse = await fetch("http://localhost:8000/current-session-documents");
+      const sessionResponse = await fetch(API_CONFIG.ENDPOINTS.CURRENT_SESSION_DOCUMENTS);
       const sessionData = await sessionResponse.json();
       
       console.log("Current session documents for quiz:", sessionData.documents);
       
-      const response = await fetch("http://localhost:8000/generate-quiz", {
+      const response = await fetch(API_CONFIG.ENDPOINTS.QUIZ, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -118,7 +119,7 @@ const QuizView = ({ documents }: QuizViewProps) => {
 
   const trackQuizCompletion = async () => {
     try {
-      const response = await fetch("http://localhost:8000/analytics/track-quiz", {
+      const response = await fetch(API_CONFIG.ENDPOINTS.TRACK_QUIZ, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

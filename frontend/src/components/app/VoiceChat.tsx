@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import API_CONFIG from "@/lib/api";
 import { 
   Mic, 
   MicOff, 
@@ -61,7 +62,7 @@ const VoiceChat = ({ documents }: VoiceChatProps) => {
     
     setIsConnecting(true);
     try {
-      const wsUrl = `ws://localhost:8000/voice/ws/${clientId}`;
+      const wsUrl = API_CONFIG.ENDPOINTS.VOICE_WS(clientId);
       websocketRef.current = new WebSocket(wsUrl);
       
       websocketRef.current.onopen = () => {

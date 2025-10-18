@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Loader2, FileText, Copy, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import API_CONFIG from "@/lib/api";
 
 interface SummaryViewProps {
   documents: string[];
@@ -27,12 +28,12 @@ const SummaryView = ({ documents }: SummaryViewProps) => {
     
     try {
       // Get current session documents from backend
-      const sessionResponse = await fetch("http://localhost:8000/current-session-documents");
+      const sessionResponse = await fetch(API_CONFIG.ENDPOINTS.CURRENT_SESSION_DOCUMENTS);
       const sessionData = await sessionResponse.json();
       
       console.log("Current session documents:", sessionData.documents);
       
-      const response = await fetch("http://localhost:8000/summarize", {
+      const response = await fetch(API_CONFIG.ENDPOINTS.SUMMARIZE, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

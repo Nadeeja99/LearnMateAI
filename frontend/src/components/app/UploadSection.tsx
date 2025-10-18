@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Upload, File, CheckCircle, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import API_CONFIG from "@/lib/api";
 
 interface UploadSectionProps {
   onUploadSuccess: (filename: string) => void;
@@ -56,7 +57,7 @@ const UploadSection = ({ onUploadSuccess }: UploadSectionProps) => {
       formData.append("file", file);
 
       // TODO: Replace with actual API endpoint
-      const response = await fetch("http://localhost:8000/upload", {
+      const response = await fetch(API_CONFIG.ENDPOINTS.UPLOAD, {
         method: "POST",
         body: formData,
       });

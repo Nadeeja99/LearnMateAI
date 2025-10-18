@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { FileText, Search, Trash2, MessageSquare, Download, Grid3x3, List } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import API_CONFIG from "@/lib/api";
 
 interface DocumentsViewProps {
   documents: string[];
@@ -36,7 +37,7 @@ const DocumentsView = ({ documents, onDelete, onNavigateToChat }: DocumentsViewP
     if (window.confirm(`Are you sure you want to delete "${filename}"?`)) {
       try {
         // Call backend API to delete the document
-        const response = await fetch(`http://localhost:8000/documents/${encodeURIComponent(filename)}`, {
+        const response = await fetch(API_CONFIG.ENDPOINTS.DELETE_DOCUMENT(filename), {
           method: "DELETE",
         });
 

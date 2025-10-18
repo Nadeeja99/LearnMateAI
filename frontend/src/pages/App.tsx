@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MessageSquare, FileText, HelpCircle, FolderOpen, Upload, Home, Sparkles, RefreshCw, BarChart3, Mic, Menu, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
+import API_CONFIG from "@/lib/api";
 import ChatView from "@/components/app/ChatView";
 import SummaryView from "@/components/app/SummaryView";
 import QuizView from "@/components/app/QuizView";
@@ -33,7 +34,7 @@ const AppPage = () => {
 
   const fetchCurrentSessionDocuments = async () => {
     try {
-      const response = await fetch("http://localhost:8000/current-session-documents");
+      const response = await fetch(API_CONFIG.ENDPOINTS.CURRENT_SESSION_DOCUMENTS);
       const data = await response.json();
       setDocuments(data.documents || []);
     } catch (error) {
