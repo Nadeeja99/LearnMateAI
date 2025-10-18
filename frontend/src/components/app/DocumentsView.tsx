@@ -54,12 +54,12 @@ const DocumentsView = ({ documents, onDelete }: DocumentsViewProps) => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold mb-2">My Documents</h2>
-          <p className="text-muted-foreground">
+          <h2 className="text-2xl sm:text-3xl font-bold mb-2">My Documents</h2>
+          <p className="text-muted-foreground text-sm sm:text-base">
             {documents.length} {documents.length === 1 ? 'document' : 'documents'} uploaded
           </p>
         </div>

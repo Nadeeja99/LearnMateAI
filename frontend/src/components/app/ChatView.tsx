@@ -205,27 +205,32 @@ const ChatView = ({ documents }: ChatViewProps) => {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-12rem)]">
+    <div className="flex flex-col h-[calc(100vh-12rem)] sm:h-[calc(100vh-10rem)]">
       {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-3xl font-bold">Chat with Your Documents</h2>
-          <div className="flex gap-2">
+      <div className="mb-4 sm:mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-2">
+          <h2 className="text-2xl sm:text-3xl font-bold">Chat with Your Documents</h2>
+          <div className="flex gap-2 flex-wrap">
             <Button
               variant="outline"
               size="sm"
               onClick={() => setShowConversations(!showConversations)}
+              className="text-xs sm:text-sm"
             >
-              <History className="h-4 w-4 mr-2" />
-              Conversations ({conversations.length})
+              <History className="h-4 w-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Conversations</span>
+              <span className="sm:hidden">Chats</span>
+              ({conversations.length})
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={() => createNewConversation(true)}
+              className="text-xs sm:text-sm"
             >
-              <Plus className="h-4 w-4 mr-2" />
-              New Chat
+              <Plus className="h-4 w-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">New Chat</span>
+              <span className="sm:hidden">New</span>
             </Button>
           </div>
         </div>
@@ -291,27 +296,27 @@ const ChatView = ({ documents }: ChatViewProps) => {
 
       {/* Messages */}
       <Card className="flex-1 mb-4 overflow-hidden">
-        <ScrollArea className="h-full p-6" ref={scrollRef}>
+        <ScrollArea className="h-full p-4 sm:p-6" ref={scrollRef}>
           {messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full space-y-8">
-              <div className="text-center space-y-4">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center mx-auto">
-                  <Sparkles className="h-8 w-8 text-white" />
+            <div className="flex flex-col items-center justify-center h-full space-y-6 sm:space-y-8">
+              <div className="text-center space-y-3 sm:space-y-4">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center mx-auto">
+                  <Sparkles className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-semibold mb-2">Start a Conversation</h3>
-                  <p className="text-muted-foreground">Ask questions about your documents</p>
+                  <h3 className="text-lg sm:text-xl font-semibold mb-2">Start a Conversation</h3>
+                  <p className="text-muted-foreground text-sm sm:text-base">Ask questions about your documents</p>
                 </div>
               </div>
 
               {documents.length > 0 && (
-                <div className="space-y-3 w-full max-w-md">
-                  <p className="text-sm text-muted-foreground text-center">Try these questions:</p>
+                <div className="space-y-2 sm:space-y-3 w-full max-w-md">
+                  <p className="text-xs sm:text-sm text-muted-foreground text-center">Try these questions:</p>
                   {sampleQuestions.map((question, index) => (
                     <Button
                       key={index}
                       variant="outline"
-                      className="w-full justify-start text-left"
+                      className="w-full justify-start text-left text-xs sm:text-sm"
                       onClick={() => handleSampleQuestion(question)}
                     >
                       {question}
@@ -328,31 +333,32 @@ const ChatView = ({ documents }: ChatViewProps) => {
                   className={`flex ${message.role === "user" ? "justify-end" : "justify-start"} animate-fade-up`}
                 >
                   <div
-                    className={`max-w-[80%] rounded-lg p-4 ${
+                    className={`max-w-[90%] sm:max-w-[80%] rounded-lg p-3 sm:p-4 ${
                       message.role === "user"
                         ? "bg-primary text-primary-foreground"
                         : "bg-muted"
                     }`}
                   >
-                    <p className="whitespace-pre-wrap">{message.content}</p>
+                    <p className="whitespace-pre-wrap text-sm sm:text-base">{message.content}</p>
                     <div className="text-xs text-muted-foreground mt-2">
                       {new Date(message.timestamp).toLocaleTimeString()}
                     </div>
                     
                     {message.role === "assistant" && (
-                      <div className="mt-3 pt-3 border-t border-border flex items-center gap-2">
+                      <div className="mt-3 pt-3 border-t border-border flex items-center gap-1 sm:gap-2">
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => handleCopy(message.content)}
+                          className="text-xs"
                         >
                           <Copy className="h-3 w-3 mr-1" />
                           Copy
                         </Button>
-                        <Button variant="ghost" size="sm">
+                        <Button variant="ghost" size="sm" className="text-xs">
                           <ThumbsUp className="h-3 w-3" />
                         </Button>
-                        <Button variant="ghost" size="sm">
+                        <Button variant="ghost" size="sm" className="text-xs">
                           <ThumbsDown className="h-3 w-3" />
                         </Button>
                       </div>
@@ -383,10 +389,15 @@ const ChatView = ({ documents }: ChatViewProps) => {
           onChange={(e) => setInput(e.target.value)}
           onKeyPress={(e) => e.key === "Enter" && handleSend()}
           placeholder="Ask a question about your documents..."
-          className="flex-1"
+          className="flex-1 text-sm sm:text-base"
           disabled={isLoading || documents.length === 0}
         />
-        <Button onClick={handleSend} disabled={isLoading || !input.trim() || documents.length === 0}>
+        <Button 
+          onClick={handleSend} 
+          disabled={isLoading || !input.trim() || documents.length === 0}
+          size="sm"
+          className="px-3 sm:px-4"
+        >
           <Send className="h-4 w-4" />
         </Button>
       </div>

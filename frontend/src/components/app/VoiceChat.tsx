@@ -302,12 +302,12 @@ const VoiceChat = ({ documents }: VoiceChatProps) => {
 
 
   return (
-    <div className="flex flex-col h-[calc(100vh-12rem)]">
+    <div className="flex flex-col h-[calc(100vh-12rem)] sm:h-[calc(100vh-10rem)]">
       {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-3xl font-bold">Voice Learning Assistant</h2>
-          <div className="flex items-center gap-2">
+      <div className="mb-4 sm:mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-2">
+          <h2 className="text-2xl sm:text-3xl font-bold">Voice Learning Assistant</h2>
+          <div className="flex items-center gap-2 flex-wrap">
             <div className={`px-3 py-1 rounded-full text-sm ${
               isConnected 
                 ? "bg-green-100 text-green-800 border border-green-200" 
@@ -320,9 +320,10 @@ const VoiceChat = ({ documents }: VoiceChatProps) => {
                 variant="outline"
                 size="sm"
                 onClick={disconnectFromVoiceAgent}
+                className="text-xs sm:text-sm"
               >
-                <PhoneOff className="h-4 w-4 mr-2" />
-                Disconnect
+                <PhoneOff className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Disconnect</span>
               </Button>
             )}
           </div>
@@ -338,24 +339,26 @@ const VoiceChat = ({ documents }: VoiceChatProps) => {
       </div>
 
       {/* Voice Controls */}
-      <Card className="p-6 mb-4">
-        <div className="flex items-center justify-center gap-4">
+      <Card className="p-4 sm:p-6 mb-4">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
           {!isConnected ? (
             <Button
               onClick={connectToVoiceAgent}
               disabled={isConnecting}
               size="lg"
-              className="px-8"
+              className="px-6 sm:px-8 w-full sm:w-auto"
             >
               {isConnecting ? (
                 <>
                   <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                  Connecting...
+                  <span className="hidden sm:inline">Connecting...</span>
+                  <span className="sm:hidden">Connecting</span>
                 </>
               ) : (
                 <>
                   <Phone className="h-5 w-5 mr-2" />
-                  Connect to Voice Agent
+                  <span className="hidden sm:inline">Connect to Voice Agent</span>
+                  <span className="sm:hidden">Connect</span>
                 </>
               )}
             </Button>
@@ -366,17 +369,19 @@ const VoiceChat = ({ documents }: VoiceChatProps) => {
                 disabled={isSpeaking}
                 variant={isListening ? "destructive" : "default"}
                 size="lg"
-                className="px-8"
+                className="px-6 sm:px-8 w-full sm:w-auto"
               >
                 {isListening ? (
                   <>
                     <MicOff className="h-5 w-5 mr-2" />
-                    Stop Listening
+                    <span className="hidden sm:inline">Stop Listening</span>
+                    <span className="sm:hidden">Stop</span>
                   </>
                 ) : (
                   <>
                     <Mic className="h-5 w-5 mr-2" />
-                    Start Speaking
+                    <span className="hidden sm:inline">Start Speaking</span>
+                    <span className="sm:hidden">Speak</span>
                   </>
                 )}
               </Button>
@@ -386,16 +391,19 @@ const VoiceChat = ({ documents }: VoiceChatProps) => {
                 disabled={!isSpeaking}
                 variant="outline"
                 size="lg"
+                className="px-6 sm:px-8 w-full sm:w-auto"
               >
                 {isSpeaking ? (
                   <>
                     <Pause className="h-5 w-5 mr-2" />
-                    Stop Speaking
+                    <span className="hidden sm:inline">Stop Speaking</span>
+                    <span className="sm:hidden">Stop</span>
                   </>
                 ) : (
                   <>
                     <VolumeX className="h-5 w-5 mr-2" />
-                    Muted
+                    <span className="hidden sm:inline">Muted</span>
+                    <span className="sm:hidden">Mute</span>
                   </>
                 )}
               </Button>

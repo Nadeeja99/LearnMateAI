@@ -75,10 +75,10 @@ const SummaryView = ({ documents }: SummaryViewProps) => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold mb-2">Document Summary</h2>
-          <p className="text-muted-foreground">
+          <h2 className="text-2xl sm:text-3xl font-bold mb-2">Document Summary</h2>
+          <p className="text-muted-foreground text-sm sm:text-base">
             Generate comprehensive summaries of your documents
           </p>
         </div>
@@ -87,7 +87,7 @@ const SummaryView = ({ documents }: SummaryViewProps) => {
           onClick={handleGenerate}
           disabled={isGenerating || documents.length === 0}
           size="lg"
-          className="bg-gradient-to-r from-primary to-secondary"
+          className="bg-gradient-to-r from-primary to-secondary w-full sm:w-auto"
         >
           {isGenerating ? (
             <>
@@ -105,16 +105,16 @@ const SummaryView = ({ documents }: SummaryViewProps) => {
 
       {/* Summary Display */}
       {summary ? (
-        <Card className="p-8">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-semibold">Summary</h3>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={handleCopy}>
-                <Copy className="h-4 w-4 mr-2" />
+        <Card className="p-4 sm:p-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <h3 className="text-lg sm:text-xl font-semibold">Summary</h3>
+            <div className="flex gap-2 flex-wrap">
+              <Button variant="outline" size="sm" onClick={handleCopy} className="text-xs sm:text-sm">
+                <Copy className="h-4 w-4 mr-1 sm:mr-2" />
                 Copy
               </Button>
-              <Button variant="outline" size="sm">
-                <Download className="h-4 w-4 mr-2" />
+              <Button variant="outline" size="sm" className="text-xs sm:text-sm">
+                <Download className="h-4 w-4 mr-1 sm:mr-2" />
                 Download PDF
               </Button>
             </div>

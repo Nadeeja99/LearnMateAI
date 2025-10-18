@@ -160,12 +160,12 @@ const QuizView = ({ documents }: QuizViewProps) => {
 
   if (quizCompleted) {
     return (
-      <div className="max-w-4xl mx-auto p-6">
-        <Card className="p-8 text-center">
+      <div className="max-w-4xl mx-auto p-4 sm:p-6">
+        <Card className="p-6 sm:p-8 text-center">
           <div className="mb-6">
-            <div className="text-6xl mb-4">🎉</div>
-            <h2 className="text-3xl font-bold mb-2">Quiz Completed!</h2>
-            <p className="text-gray-600">Here's how you did</p>
+            <div className="text-4xl sm:text-6xl mb-4">🎉</div>
+            <h2 className="text-2xl sm:text-3xl font-bold mb-2">Quiz Completed!</h2>
+            <p className="text-gray-600 text-sm sm:text-base">Here's how you did</p>
           </div>
           
           <div className="mb-8">
@@ -190,12 +190,12 @@ const QuizView = ({ documents }: QuizViewProps) => {
 
   if (questions.length === 0) {
     return (
-      <div className="max-w-4xl mx-auto p-6">
-        <Card className="p-8">
-          <div className="text-center mb-8">
-            <HelpCircle className="w-16 h-16 mx-auto mb-4 text-blue-500" />
-            <h2 className="text-2xl font-bold mb-2">Generate Quiz</h2>
-            <p className="text-gray-600">
+      <div className="max-w-4xl mx-auto p-4 sm:p-6">
+        <Card className="p-6 sm:p-8">
+          <div className="text-center mb-6 sm:mb-8">
+            <HelpCircle className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 text-blue-500" />
+            <h2 className="text-xl sm:text-2xl font-bold mb-2">Generate Quiz</h2>
+            <p className="text-gray-600 text-sm sm:text-base">
               Create a quiz from your uploaded documents to test your knowledge
             </p>
           </div>
@@ -267,18 +267,18 @@ const QuizView = ({ documents }: QuizViewProps) => {
   const isCorrect = currentQ.userAnswer === currentQ.correct_answer;
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <Card className="p-6">
-        <div className="flex justify-between items-center mb-6">
+    <div className="max-w-4xl mx-auto p-4 sm:p-6">
+      <Card className="p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
           <div>
-            <h2 className="text-2xl font-bold">Quiz</h2>
-            <p className="text-gray-600">
+            <h2 className="text-xl sm:text-2xl font-bold">Quiz</h2>
+            <p className="text-gray-600 text-sm sm:text-base">
               Question {currentQuestion + 1} of {questions.length}
             </p>
           </div>
-          <div className="text-right">
+          <div className="text-left sm:text-right">
             <div className="text-sm text-gray-500">Score</div>
-            <div className="text-xl font-bold">{score}/{questions.length}</div>
+            <div className="text-lg sm:text-xl font-bold">{score}/{questions.length}</div>
           </div>
         </div>
 

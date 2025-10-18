@@ -125,20 +125,20 @@ const UploadSection = ({ onUploadSuccess }: UploadSectionProps) => {
   }, [toast, handleUpload]);
 
   return (
-    <Card className="p-6 border-dashed border-2 border-border hover:border-primary/50 transition-colors">
+    <Card className="p-4 sm:p-6 border-dashed border-2 border-border hover:border-primary/50 transition-colors">
       <div
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        className={`text-center space-y-4 ${isDragging ? 'opacity-50' : ''}`}
+        className={`text-center space-y-3 sm:space-y-4 ${isDragging ? 'opacity-50' : ''}`}
       >
-        <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mx-auto">
-          <Upload className="h-6 w-6 text-primary" />
+        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-primary/10 flex items-center justify-center mx-auto">
+          <Upload className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
         </div>
         
         <div>
-          <h3 className="font-semibold mb-1">Upload Document</h3>
-          <p className="text-sm text-muted-foreground">
+          <h3 className="font-semibold mb-1 text-sm sm:text-base">Upload Document</h3>
+          <p className="text-xs sm:text-sm text-muted-foreground">
             Drag & drop or click to browse
           </p>
           <p className="text-xs text-muted-foreground mt-1">

@@ -93,15 +93,15 @@ const AnalyticsDashboard = () => {
     color?: string;
     subtitle?: string;
   }) => (
-    <Card className="p-6">
+    <Card className="p-4 sm:p-6">
       <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium text-muted-foreground">{title}</p>
-          <p className="text-2xl font-bold">{value}</p>
-          {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
+        <div className="flex-1 min-w-0">
+          <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">{title}</p>
+          <p className="text-lg sm:text-2xl font-bold">{value}</p>
+          {subtitle && <p className="text-xs text-muted-foreground mt-1 truncate">{subtitle}</p>}
         </div>
-        <div className={`p-3 rounded-lg bg-${color}/10`}>
-          <Icon className={`h-6 w-6 text-${color}`} />
+        <div className={`p-2 sm:p-3 rounded-lg bg-${color}/10 flex-shrink-0 ml-2`}>
+          <Icon className={`h-4 w-4 sm:h-6 sm:w-6 text-${color}`} />
         </div>
       </div>
     </Card>
@@ -112,12 +112,12 @@ const AnalyticsDashboard = () => {
     const entries = Object.entries(data).slice(-7); // Last 7 days
 
     return (
-      <Card className="p-6">
-        <h3 className="font-semibold mb-4">{title}</h3>
-        <div className="space-y-3">
+      <Card className="p-4 sm:p-6">
+        <h3 className="font-semibold mb-4 text-sm sm:text-base">{title}</h3>
+        <div className="space-y-2 sm:space-y-3">
           {entries.map(([date, value]) => (
-            <div key={date} className="flex items-center gap-3">
-              <span className="text-sm w-20 text-muted-foreground">
+            <div key={date} className="flex items-center gap-2 sm:gap-3">
+              <span className="text-xs sm:text-sm w-16 sm:w-20 text-muted-foreground flex-shrink-0">
                 {new Date(date).toLocaleDateString()}
               </span>
               <div className="flex-1 bg-muted rounded-full h-2">
@@ -126,7 +126,7 @@ const AnalyticsDashboard = () => {
                   style={{ width: `${(value / maxValue) * 100}%` }}
                 />
               </div>
-              <span className="text-sm font-medium w-8">{value}</span>
+              <span className="text-xs sm:text-sm font-medium w-6 sm:w-8 flex-shrink-0">{value}</span>
             </div>
           ))}
         </div>
@@ -138,20 +138,20 @@ const AnalyticsDashboard = () => {
     const total = Object.values(data).reduce((sum, val) => sum + val, 0);
     
     return (
-      <Card className="p-6">
-        <h3 className="font-semibold mb-4">{title}</h3>
-        <div className="space-y-3">
+      <Card className="p-4 sm:p-6">
+        <h3 className="font-semibold mb-4 text-sm sm:text-base">{title}</h3>
+        <div className="space-y-2 sm:space-y-3">
           {Object.entries(data).map(([key, value]) => (
-            <div key={key} className="flex items-center justify-between">
-              <span className="text-sm capitalize">{key.replace('_', ' ')}</span>
-              <div className="flex items-center gap-2">
-                <div className="w-20 bg-muted rounded-full h-2">
+            <div key={key} className="flex items-center justify-between gap-2">
+              <span className="text-xs sm:text-sm capitalize flex-1 min-w-0 truncate">{key.replace('_', ' ')}</span>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="w-16 sm:w-20 bg-muted rounded-full h-2">
                   <div
                     className="bg-primary h-2 rounded-full"
                     style={{ width: `${(value / total) * 100}%` }}
                   />
                 </div>
-                <span className="text-sm font-medium w-8">{value}</span>
+                <span className="text-xs sm:text-sm font-medium w-6 sm:w-8">{value}</span>
               </div>
             </div>
           ))}
@@ -162,37 +162,38 @@ const AnalyticsDashboard = () => {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col h-[calc(100vh-12rem)]">
-        <div className="mb-6">
-          <h2 className="text-3xl font-bold mb-2">Learning Analytics Dashboard</h2>
-          <p className="text-muted-foreground">Loading your learning insights...</p>
+      <div className="flex flex-col h-[calc(100vh-12rem)] sm:h-[calc(100vh-10rem)]">
+        <div className="mb-4 sm:mb-6">
+          <h2 className="text-2xl sm:text-3xl font-bold mb-2">Learning Analytics Dashboard</h2>
+          <p className="text-muted-foreground text-sm sm:text-base">Loading your learning insights...</p>
         </div>
         <div className="flex items-center justify-center flex-1">
-          <RefreshCw className="h-8 w-8 animate-spin text-primary" />
+          <RefreshCw className="h-6 w-6 sm:h-8 sm:w-8 animate-spin text-primary" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-12rem)]">
+    <div className="flex flex-col h-[calc(100vh-12rem)] sm:h-[calc(100vh-10rem)]">
       {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-3xl font-bold">Learning Analytics Dashboard</h2>
-          <Button onClick={loadAnalytics} variant="outline" size="sm">
+      <div className="mb-4 sm:mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-2">
+          <h2 className="text-2xl sm:text-3xl font-bold">Learning Analytics Dashboard</h2>
+          <Button onClick={loadAnalytics} variant="outline" size="sm" className="w-full sm:w-auto">
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
           </Button>
         </div>
-        <p className="text-muted-foreground">Track your learning progress and insights</p>
+        <p className="text-muted-foreground text-sm sm:text-base">Track your learning progress and insights</p>
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex gap-2 mb-6">
+      <div className="flex gap-2 mb-4 sm:mb-6 flex-wrap">
         <Button
           variant={activeTab === "user" ? "default" : "outline"}
           onClick={() => setActiveTab("user")}
+          className="text-xs sm:text-sm"
         >
           Your Progress
         </Button>
@@ -208,7 +209,7 @@ const AnalyticsDashboard = () => {
         {activeTab === "user" && userAnalytics && (
           <div className="space-y-6">
             {/* Key Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               <StatCard
                 title="Total Sessions"
                 value={userAnalytics.total_sessions}
@@ -239,7 +240,7 @@ const AnalyticsDashboard = () => {
             </div>
 
             {/* Additional Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               <StatCard
                 title="Summaries Generated"
                 value={userAnalytics.total_summaries_generated}
