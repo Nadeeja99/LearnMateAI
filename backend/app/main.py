@@ -204,6 +204,28 @@ async def ask_question(question_data: dict):
         logger.info(f"Processing question: {question[:100]}...")
         
         # Get current session document names
+        # If current_session_documents is empty, rebuild from vector store
+        if not current_session_documents:
+            try:
+                all_docs = vector_store.get_all_documents()
+                if all_docs:
+                    doc_names = set()
+                    for doc in all_docs:
+                        if 'source' in doc.metadata:
+                            doc_names.add(doc.metadata['source'])
+                    
+                    if doc_names:
+                        current_session_documents = {}
+                        for doc_name in doc_names:
+                            current_session_documents[doc_name] = {
+                                "filename": doc_name,
+                                "chunks_count": len([d for d in all_docs if d.metadata.get('source') == doc_name]),
+                                "uploaded_at": datetime.now().isoformat()
+                            }
+                        logger.info(f"Rebuilt current_session_documents from vector store for /ask: {list(doc_names)}")
+            except Exception as e:
+                logger.error(f"Error rebuilding current_session_documents in /ask: {e}")
+        
         session_docs = list(current_session_documents.keys()) if current_session_documents else None
         logger.info(f"Using documents from current session: {session_docs}")
         
@@ -266,6 +288,28 @@ async def generate_summary(summary_data: dict):
         document_name = summary_data.get("document_name")
         
         # Get current session document names
+        # If current_session_documents is empty, rebuild from vector store
+        if not current_session_documents:
+            try:
+                all_docs = vector_store.get_all_documents()
+                if all_docs:
+                    doc_names = set()
+                    for doc in all_docs:
+                        if 'source' in doc.metadata:
+                            doc_names.add(doc.metadata['source'])
+                    
+                    if doc_names:
+                        current_session_documents = {}
+                        for doc_name in doc_names:
+                            current_session_documents[doc_name] = {
+                                "filename": doc_name,
+                                "chunks_count": len([d for d in all_docs if d.metadata.get('source') == doc_name]),
+                                "uploaded_at": datetime.now().isoformat()
+                            }
+                        logger.info(f"Rebuilt current_session_documents from vector store for /summarize: {list(doc_names)}")
+            except Exception as e:
+                logger.error(f"Error rebuilding current_session_documents in /summarize: {e}")
+        
         session_docs = list(current_session_documents.keys()) if current_session_documents else None
         
         # If specific document requested, use only that one
@@ -316,6 +360,28 @@ async def generate_quiz(quiz_data: dict):
             )
         
         # Get current session document names
+        # If current_session_documents is empty, rebuild from vector store
+        if not current_session_documents:
+            try:
+                all_docs = vector_store.get_all_documents()
+                if all_docs:
+                    doc_names = set()
+                    for doc in all_docs:
+                        if 'source' in doc.metadata:
+                            doc_names.add(doc.metadata['source'])
+                    
+                    if doc_names:
+                        current_session_documents = {}
+                        for doc_name in doc_names:
+                            current_session_documents[doc_name] = {
+                                "filename": doc_name,
+                                "chunks_count": len([d for d in all_docs if d.metadata.get('source') == doc_name]),
+                                "uploaded_at": datetime.now().isoformat()
+                            }
+                        logger.info(f"Rebuilt current_session_documents from vector store for /generate-quiz: {list(doc_names)}")
+            except Exception as e:
+                logger.error(f"Error rebuilding current_session_documents in /generate-quiz: {e}")
+        
         session_docs = list(current_session_documents.keys()) if current_session_documents else None
         
         # If specific document requested, use only that one
@@ -391,7 +457,34 @@ async def clear_documents():
 @app.get("/current-session-documents")
 async def get_current_session_documents():
     """Get documents uploaded in current session"""
+    global current_session_documents
     try:
+        # If current_session_documents is empty (e.g., after server restart),
+        # get documents from the vector store instead
+        if not current_session_documents:
+            try:
+                # Get documents from vector store
+                all_docs = vector_store.get_all_documents()
+                if all_docs:
+                    # Extract unique document names from metadata
+                    doc_names = set()
+                    for doc in all_docs:
+                        if 'source' in doc.metadata:
+                            doc_names.add(doc.metadata['source'])
+                    
+                    if doc_names:
+                        # Rebuild current_session_documents from vector store
+                        current_session_documents = {}
+                        for doc_name in doc_names:
+                            current_session_documents[doc_name] = {
+                                "filename": doc_name,
+                                "chunks_count": len([d for d in all_docs if d.metadata.get('source') == doc_name]),
+                                "uploaded_at": datetime.now().isoformat()
+                            }
+                        logger.info(f"Rebuilt current_session_documents from vector store: {list(doc_names)}")
+            except Exception as e:
+                logger.error(f"Error rebuilding current_session_documents: {e}")
+        
         return {
             "documents": list(current_session_documents.keys()),
             "total": len(current_session_documents),
