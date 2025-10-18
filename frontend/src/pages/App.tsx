@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MessageSquare, FileText, HelpCircle, FolderOpen, Upload, Home, Sparkles, RefreshCw, BarChart3 } from "lucide-react";
+import { MessageSquare, FileText, HelpCircle, FolderOpen, Upload, Home, Sparkles, RefreshCw, BarChart3, Mic } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ChatView from "@/components/app/ChatView";
 import SummaryView from "@/components/app/SummaryView";
@@ -9,6 +9,7 @@ import QuizView from "@/components/app/QuizView";
 import DocumentsView from "@/components/app/DocumentsView";
 import UploadSection from "@/components/app/UploadSection";
 import AnalyticsDashboard from "@/components/app/AnalyticsDashboard";
+import VoiceChat from "@/components/app/VoiceChat";
 
 const AppPage = () => {
   const navigate = useNavigate();
@@ -137,6 +138,15 @@ const AppPage = () => {
                 <BarChart3 className="h-4 w-4 mr-3" />
                 Analytics
               </Button>
+              
+              <Button
+                variant={activeTab === "voice" ? "default" : "ghost"}
+                className="w-full justify-start"
+                onClick={() => setActiveTab("voice")}
+              >
+                <Mic className="h-4 w-4 mr-3" />
+                Voice Chat
+              </Button>
             </div>
 
             {/* Uploaded Documents List */}
@@ -171,6 +181,7 @@ const AppPage = () => {
               />
             )}
             {activeTab === "analytics" && <AnalyticsDashboard />}
+            {activeTab === "voice" && <VoiceChat documents={documents} />}
           </div>
         </main>
       </div>

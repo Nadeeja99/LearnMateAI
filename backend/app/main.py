@@ -2,11 +2,13 @@ import os
 import logging
 import io
 from datetime import datetime
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI, File, UploadFile, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 import uvicorn
+import uuid
+import json
 
 # Import our RAG modules
 from .document_processor import DocumentProcessor
@@ -15,6 +17,8 @@ from .rag_chain import RAGChain
 from .langfuse_config import langfuse_config
 from .conversation_memory import conversation_memory
 from .learning_analytics import learning_analytics
+from .voice_agent import VoiceAgent, voice_agent
+from .voice_processing import VoiceProcessingService, voice_processing_service
 
 # Load environment variables
 load_dotenv()
@@ -47,7 +51,7 @@ current_session_documents = {}  # Track documents uploaded in current session
 
 def initialize_rag_system():
     """Initialize the RAG system components"""
-    global document_processor, vector_store, rag_chain
+    global document_processor, vector_store, rag_chain, voice_agent, voice_processing_service
     
     try:
         openai_api_key = os.getenv("OPENAI_API_KEY")
@@ -58,6 +62,12 @@ def initialize_rag_system():
         document_processor = DocumentProcessor()
         vector_store = VectorStore(openai_api_key)
         rag_chain = RAGChain(openai_api_key, vector_store)
+        
+        # Initialize voice processing service
+        voice_processing_service = VoiceProcessingService(openai_api_key)
+        
+        # Initialize voice agent
+        voice_agent = VoiceAgent(rag_chain, voice_processing_service)
         
         # Clear any existing vector store to start fresh
         vector_store.clear_store()
@@ -524,6 +534,105 @@ async def track_quiz_completion(quiz_data: dict):
     except Exception as e:
         logger.error(f"Error tracking quiz completion: {e}")
         raise HTTPException(status_code=500, detail=f"Error tracking quiz completion: {str(e)}")
+
+# ===== VOICE AGENT ENDPOINTS =====
+
+@app.websocket("/voice/ws/{client_id}")
+async def websocket_voice_endpoint(websocket: WebSocket, client_id: str):
+    """WebSocket endpoint for real-time voice interaction"""
+    try:
+        await voice_agent.connect(websocket, client_id)
+        
+        while True:
+            try:
+                # Receive message from client
+                data = await websocket.receive_text()
+                message = json.loads(data)
+                
+                # Handle the message
+                await voice_agent.handle_websocket_message(client_id, message)
+                
+            except WebSocketDisconnect:
+                logger.info(f"Client {client_id} disconnected from voice agent")
+                break
+            except Exception as e:
+                logger.error(f"Error handling WebSocket message: {e}")
+                await websocket.send_text(json.dumps({
+                    "type": "error",
+                    "message": "An error occurred processing your request"
+                }))
+                
+    except Exception as e:
+        logger.error(f"WebSocket connection error: {e}")
+    finally:
+        await voice_agent.disconnect(client_id)
+
+@app.get("/voice/status")
+async def get_voice_agent_status():
+    """Get voice agent status and active connections"""
+    try:
+        return {
+            "status": "active",
+            "active_connections": voice_agent.get_active_connections_count(),
+            "voice_enabled": True,
+            "features": [
+                "real_time_voice_chat",
+                "pdf_analysis",
+                "conversation_memory",
+                "analytics_tracking"
+            ]
+        }
+    except Exception as e:
+        logger.error(f"Error getting voice agent status: {e}")
+        raise HTTPException(status_code=500, detail=f"Error getting voice agent status: {str(e)}")
+
+@app.get("/voice/connections")
+async def get_voice_connections():
+    """Get information about active voice connections"""
+    try:
+        connections = []
+        for client_id in voice_agent.active_connections.keys():
+            info = voice_agent.get_connection_info(client_id)
+            if info:
+                connections.append(info)
+        
+        return {
+            "active_connections": connections,
+            "total_connections": len(connections)
+        }
+    except Exception as e:
+        logger.error(f"Error getting voice connections: {e}")
+        raise HTTPException(status_code=500, detail=f"Error getting voice connections: {str(e)}")
+
+@app.get("/voice/test")
+async def test_voice_processing():
+    """Test voice processing capabilities"""
+    try:
+        if not voice_processing_service:
+            raise HTTPException(status_code=500, detail="Voice processing service not initialized")
+        
+        test_result = await voice_processing_service.test_voice_processing()
+        return test_result
+        
+    except Exception as e:
+        logger.error(f"Error testing voice processing: {e}")
+        raise HTTPException(status_code=500, detail=f"Error testing voice processing: {str(e)}")
+
+@app.get("/voice/voices")
+async def get_available_voices():
+    """Get available TTS voices"""
+    try:
+        if not voice_processing_service:
+            raise HTTPException(status_code=500, detail="Voice processing service not initialized")
+        
+        return {
+            "available_voices": voice_processing_service.get_available_voices(),
+            "current_voice": voice_processing_service.tts_voice
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting available voices: {e}")
+        raise HTTPException(status_code=500, detail=f"Error getting available voices: {str(e)}")
 
 if __name__ == "__main__":
     uvicorn.run(

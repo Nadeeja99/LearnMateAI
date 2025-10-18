@@ -349,5 +349,410 @@
       "Nadeeja Perera copy (3).pdf"
     ],
     "summary": null
+  },
+  "conv_20251018_145048_default": {
+    "id": "conv_20251018_145048_default",
+    "user_id": "default",
+    "title": "Voice Chat 2025-10-18 14:50",
+    "messages": [
+      {
+        "id": "msg_20251018_145050_488358",
+        "role": "user",
+        "content": "What are the main topics covered in the document?",
+        "timestamp": "2025-10-18T14:50:50.488411",
+        "metadata": {
+          "document_names": null
+        }
+      },
+      {
+        "id": "msg_20251018_145050_490224",
+        "role": "assistant",
+        "content": "The main topics covered in the document are Nadeeja Perera's work experience, education, skills, projects, and contact information.",
+        "timestamp": "2025-10-18T14:50:50.490251",
+        "metadata": {
+          "sources": [
+            "Nadeeja Perera copy (5).pdf",
+            "Nadeeja Perera copy (5).pdf",
+            "Nadeeja Perera copy (5).pdf",
+            "Nadeeja Perera copy (5).pdf",
+            "Nadeeja Perera copy (5).pdf"
+          ],
+          "context_length": 4729
+        }
+      },
+      {
+        "id": "msg_20251018_145154_881242",
+        "role": "user",
+        "content": "What are the main topics covered in the document?",
+        "timestamp": "2025-10-18T14:51:54.881409",
+        "metadata": {
+          "document_names": null
+        }
+      },
+      {
+        "id": "msg_20251018_145154_884127",
+        "role": "assistant",
+        "content": "The main topics covered in the document are Nadeeja Perera's work experience, education, skills, projects, and contact information.",
+        "timestamp": "2025-10-18T14:51:54.884160",
+        "metadata": {
+          "sources": [
+            "Nadeeja Perera copy (5).pdf",
+            "Nadeeja Perera copy (5).pdf",
+            "Nadeeja Perera copy (5).pdf",
+            "Nadeeja Perera copy (5).pdf",
+            "Nadeeja Perera copy (5).pdf"
+          ],
+          "context_length": 4729
+        }
+      }
+    ],
+    "created_at": "2025-10-18T14:50:48.291948",
+    "updated_at": "2025-10-18T14:51:54.884164",
+    "document_context": [],
+    "summary": null
+  },
+  "conv_20251018_150341_default": {
+    "id": "conv_20251018_150341_default",
+    "user_id": "default",
+    "title": "Voice Chat 2025-10-18 15:03",
+    "messages": [
+      {
+        "id": "msg_20251018_150343_409960",
+        "role": "user",
+        "content": "I want to know about this document. Summarize it. Hello What is this?",
+        "timestamp": "2025-10-18T15:03:43.410005",
+        "metadata": {
+          "document_names": null
+        }
+      },
+      {
+        "id": "msg_20251018_150343_412306",
+        "role": "assistant",
+        "content": "This document is a resume or CV of Nadeeja Perera, a Software Engineer with experience in enterprise software development. It includes information about their education, work experience, skills, projects, and contact details. They are seeking to advance their expertise through a Master's Programme in Software Engineering and have worked on projects involving AI/ML, cybersecurity, and meal planning for diabetic patients.",
+        "timestamp": "2025-10-18T15:03:43.412336",
+        "metadata": {
+          "sources": [
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf"
+          ],
+          "context_length": 4728
+        }
+      },
+      {
+        "id": "msg_20251018_150558_673321",
+        "role": "user",
+        "content": "What is his campaign?",
+        "timestamp": "2025-10-18T15:05:58.673406",
+        "metadata": {
+          "document_names": null
+        }
+      },
+      {
+        "id": "msg_20251018_150558_676029",
+        "role": "assistant",
+        "content": "The provided context does not include any information about Nadeeja Perera's campaign.",
+        "timestamp": "2025-10-18T15:05:58.676055",
+        "metadata": {
+          "sources": [
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf"
+          ],
+          "context_length": 4728
+        }
+      },
+      {
+        "id": "msg_20251018_150614_646786",
+        "role": "user",
+        "content": "Not come pay come penny",
+        "timestamp": "2025-10-18T15:06:14.646843",
+        "metadata": {
+          "document_names": null
+        }
+      },
+      {
+        "id": "msg_20251018_150614_649353",
+        "role": "assistant",
+        "content": "I don't know.",
+        "timestamp": "2025-10-18T15:06:14.649390",
+        "metadata": {
+          "sources": [
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf"
+          ],
+          "context_length": 4728
+        }
+      },
+      {
+        "id": "msg_20251018_150630_354428",
+        "role": "user",
+        "content": "What is Navidya's working experience?",
+        "timestamp": "2025-10-18T15:06:30.354489",
+        "metadata": {
+          "document_names": null
+        }
+      },
+      {
+        "id": "msg_20251018_150630_357457",
+        "role": "assistant",
+        "content": "Nadeeja Perera's working experience includes being a Software Engineer at Fortude since January 2021.",
+        "timestamp": "2025-10-18T15:06:30.357482",
+        "metadata": {
+          "sources": [
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf"
+          ],
+          "context_length": 4728
+        }
+      },
+      {
+        "id": "msg_20251018_150656_334033",
+        "role": "user",
+        "content": "Explain this concept",
+        "timestamp": "2025-10-18T15:06:56.334087",
+        "metadata": {
+          "document_names": null
+        }
+      },
+      {
+        "id": "msg_20251018_150656_336890",
+        "role": "assistant",
+        "content": "Nadeeja Perera has a background in computer science and software engineering, with skills in Python, React.js, Node.js, MongoDB, and machine learning. She has experience working as a Software Engineer at Fortude, where she led the development of key features for a project management platform. Additionally, she has worked on projects such as a Resour ce and Pr oject Management System and a Multimodal Cyberbullying Detection System, showcasing her technical capabilities and problem-solving skills. Her educational background includes a BSc in Computer Science from the University of Westminster, UK, where she graduated with Upper Second Honours.",
+        "timestamp": "2025-10-18T15:06:56.336924",
+        "metadata": {
+          "sources": [
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf"
+          ],
+          "context_length": 4728
+        }
+      },
+      {
+        "id": "msg_20251018_150704_134074",
+        "role": "user",
+        "content": "What are the main topics?",
+        "timestamp": "2025-10-18T15:07:04.134115",
+        "metadata": {
+          "document_names": null
+        }
+      },
+      {
+        "id": "msg_20251018_150704_136962",
+        "role": "assistant",
+        "content": "The main topics include Nadeeja Perera's work experience as a Software Engineer at Fortude, her technical skills in Python, React.js, Node.js, MongoDB, and machine learning, her educational background in Computer Science from the University of Westminster, UK, and her involvement in projects such as a Resour ce and Pr oject Management System and a Multimodal Cyberbullying Detection System.",
+        "timestamp": "2025-10-18T15:07:04.136993",
+        "metadata": {
+          "sources": [
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf"
+          ],
+          "context_length": 4728
+        }
+      }
+    ],
+    "created_at": "2025-10-18T15:03:41.425346",
+    "updated_at": "2025-10-18T15:07:04.136998",
+    "document_context": [],
+    "summary": null
+  },
+  "conv_20251018_150444_default": {
+    "id": "conv_20251018_150444_default",
+    "user_id": "default",
+    "title": "Voice Chat 2025-10-18 15:04",
+    "messages": [
+      {
+        "id": "msg_20251018_150446_219967",
+        "role": "user",
+        "content": "I want to know about a specific document.",
+        "timestamp": "2025-10-18T15:04:46.220011",
+        "metadata": {
+          "document_names": null
+        }
+      },
+      {
+        "id": "msg_20251018_150446_222236",
+        "role": "assistant",
+        "content": "I don't have enough information from the context provided to know about a specific document.",
+        "timestamp": "2025-10-18T15:04:46.222283",
+        "metadata": {
+          "sources": [
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf"
+          ],
+          "context_length": 4728
+        }
+      },
+      {
+        "id": "msg_20251018_150511_668783",
+        "role": "user",
+        "content": "What is the today's date?",
+        "timestamp": "2025-10-18T15:05:11.668840",
+        "metadata": {
+          "document_names": null
+        }
+      },
+      {
+        "id": "msg_20251018_150511_671325",
+        "role": "assistant",
+        "content": "I don't have enough information from the context provided to know today's date.",
+        "timestamp": "2025-10-18T15:05:11.671351",
+        "metadata": {
+          "sources": [
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf"
+          ],
+          "context_length": 4728
+        }
+      }
+    ],
+    "created_at": "2025-10-18T15:04:44.984473",
+    "updated_at": "2025-10-18T15:05:11.671354",
+    "document_context": [],
+    "summary": null
+  },
+  "conv_20251018_150741_default": {
+    "id": "conv_20251018_150741_default",
+    "user_id": "default",
+    "title": "Voice Chat 2025-10-18 15:07",
+    "messages": [
+      {
+        "id": "msg_20251018_150743_435105",
+        "role": "user",
+        "content": "I want to know about Nadeem Pereira's skills.",
+        "timestamp": "2025-10-18T15:07:43.435152",
+        "metadata": {
+          "document_names": null
+        }
+      },
+      {
+        "id": "msg_20251018_150743_437824",
+        "role": "assistant",
+        "content": "Nadeeja Perera's skills include React.js, Node.js, Python, PostgreSQL, NLP, HTML, CSS, JavaScript, Java, Git, Sequelize.js, and GCP.",
+        "timestamp": "2025-10-18T15:07:43.437847",
+        "metadata": {
+          "sources": [
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf"
+          ],
+          "context_length": 4728
+        }
+      }
+    ],
+    "created_at": "2025-10-18T15:07:41.847477",
+    "updated_at": "2025-10-18T15:07:43.437851",
+    "document_context": [],
+    "summary": null
+  },
+  "conv_20251018_151156_default": {
+    "id": "conv_20251018_151156_default",
+    "user_id": "default",
+    "title": "Voice Chat 2025-10-18 15:11",
+    "messages": [
+      {
+        "id": "msg_20251018_151158_658893",
+        "role": "user",
+        "content": "I want to know about this uploaded document.",
+        "timestamp": "2025-10-18T15:11:58.658939",
+        "metadata": {
+          "document_names": null
+        }
+      },
+      {
+        "id": "msg_20251018_151158_661648",
+        "role": "assistant",
+        "content": "The uploaded document provides information about Nadeeja Perera's educational background, work experience as a software engineer, skills, projects, and references. It includes details about their BSc in Computer Science, certifications, work experience at Fortude, technical skills in Python, React.js, Node.js, etc., and projects they have worked on such as the cyberbullying detection system and meal plan recommendation system. Additionally, it includes contact information for references Gayanath Chandrasena and Sherantha Perera.",
+        "timestamp": "2025-10-18T15:11:58.661684",
+        "metadata": {
+          "sources": [
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf"
+          ],
+          "context_length": 4728
+        }
+      },
+      {
+        "id": "msg_20251018_151247_157257",
+        "role": "user",
+        "content": "Can you provide me the Sharanth Pereyra's contact number?",
+        "timestamp": "2025-10-18T15:12:47.157288",
+        "metadata": {
+          "document_names": null
+        }
+      },
+      {
+        "id": "msg_20251018_151247_160078",
+        "role": "assistant",
+        "content": "Sorry, I don't have access to Sherantha Perera's contact number in the provided context.",
+        "timestamp": "2025-10-18T15:12:47.160097",
+        "metadata": {
+          "sources": [
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf"
+          ],
+          "context_length": 4728
+        }
+      },
+      {
+        "id": "msg_20251018_151301_286743",
+        "role": "user",
+        "content": "What about email address?",
+        "timestamp": "2025-10-18T15:13:01.286788",
+        "metadata": {
+          "document_names": null
+        }
+      },
+      {
+        "id": "msg_20251018_151301_290046",
+        "role": "assistant",
+        "content": "Sherantha Perera's email address is sheranthap@fortude.co",
+        "timestamp": "2025-10-18T15:13:01.290069",
+        "metadata": {
+          "sources": [
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf"
+          ],
+          "context_length": 4728
+        }
+      }
+    ],
+    "created_at": "2025-10-18T15:11:56.156736",
+    "updated_at": "2025-10-18T15:13:01.290073",
+    "document_context": [],
+    "summary": null
   }
 }

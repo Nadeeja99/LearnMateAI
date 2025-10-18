@@ -270,5 +270,395 @@
       "score_percentage": 100,
       "completed_at": "2025-10-18T09:13:05.942Z"
     }
+  },
+  {
+    "id": "session_20251018_145009_381039",
+    "user_id": "default",
+    "session_type": "upload",
+    "document_name": "Nadeeja Perera copy (5).pdf",
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T14:50:09.381081",
+    "metadata": {
+      "file_size": 76196,
+      "chunks_count": 5,
+      "file_type": "pdf"
+    }
+  },
+  {
+    "id": "session_20251018_145050_491517",
+    "user_id": "default",
+    "session_type": "chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T14:50:50.491535",
+    "metadata": {
+      "question_length": 49,
+      "answer_length": 131,
+      "sources_count": 5,
+      "conversation_id": "conv_20251018_145048_default"
+    }
+  },
+  {
+    "id": "session_20251018_145050_494360",
+    "user_id": "default",
+    "session_type": "voice_chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T14:50:50.494388",
+    "metadata": {
+      "transcribed_text": "What are the main topics covered in the document?",
+      "response_length": 131,
+      "conversation_id": "conv_20251018_145048_default",
+      "voice_enabled": true
+    }
+  },
+  {
+    "id": "session_20251018_145154_885564",
+    "user_id": "default",
+    "session_type": "chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T14:51:54.885581",
+    "metadata": {
+      "question_length": 49,
+      "answer_length": 131,
+      "sources_count": 5,
+      "conversation_id": "conv_20251018_145048_default"
+    }
+  },
+  {
+    "id": "session_20251018_145154_888764",
+    "user_id": "default",
+    "session_type": "voice_chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T14:51:54.888780",
+    "metadata": {
+      "transcribed_text": "What are the main topics covered in the document?",
+      "response_length": 131,
+      "conversation_id": "conv_20251018_145048_default",
+      "voice_enabled": true
+    }
+  },
+  {
+    "id": "session_20251018_150256_117200",
+    "user_id": "default",
+    "session_type": "upload",
+    "document_name": "Nadeeja Perera copy (4).pdf",
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T15:02:56.117246",
+    "metadata": {
+      "file_size": 76051,
+      "chunks_count": 5,
+      "file_type": "pdf"
+    }
+  },
+  {
+    "id": "session_20251018_150343_413848",
+    "user_id": "default",
+    "session_type": "chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T15:03:43.413879",
+    "metadata": {
+      "question_length": 69,
+      "answer_length": 423,
+      "sources_count": 5,
+      "conversation_id": "conv_20251018_150341_default"
+    }
+  },
+  {
+    "id": "session_20251018_150347_328645",
+    "user_id": "default",
+    "session_type": "voice_chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T15:03:47.328666",
+    "metadata": {
+      "transcribed_text": "I want to know about this document. Summarize it. Hello What is this?",
+      "response_length": 423,
+      "conversation_id": "conv_20251018_150341_default",
+      "voice_enabled": true
+    }
+  },
+  {
+    "id": "session_20251018_150446_224022",
+    "user_id": "default",
+    "session_type": "chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T15:04:46.224049",
+    "metadata": {
+      "question_length": 41,
+      "answer_length": 92,
+      "sources_count": 5,
+      "conversation_id": "conv_20251018_150444_default"
+    }
+  },
+  {
+    "id": "session_20251018_150449_543614",
+    "user_id": "default",
+    "session_type": "voice_chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T15:04:49.543665",
+    "metadata": {
+      "transcribed_text": "I want to know about a specific document.",
+      "response_length": 92,
+      "conversation_id": "conv_20251018_150444_default",
+      "voice_enabled": true
+    }
+  },
+  {
+    "id": "session_20251018_150511_674470",
+    "user_id": "default",
+    "session_type": "chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T15:05:11.674494",
+    "metadata": {
+      "question_length": 25,
+      "answer_length": 79,
+      "sources_count": 5,
+      "conversation_id": "conv_20251018_150444_default"
+    }
+  },
+  {
+    "id": "session_20251018_150513_743588",
+    "user_id": "default",
+    "session_type": "voice_chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T15:05:13.743639",
+    "metadata": {
+      "transcribed_text": "What is the today's date?",
+      "response_length": 79,
+      "conversation_id": "conv_20251018_150444_default",
+      "voice_enabled": true
+    }
+  },
+  {
+    "id": "session_20251018_150558_677752",
+    "user_id": "default",
+    "session_type": "chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T15:05:58.677769",
+    "metadata": {
+      "question_length": 21,
+      "answer_length": 86,
+      "sources_count": 5,
+      "conversation_id": "conv_20251018_150341_default"
+    }
+  },
+  {
+    "id": "session_20251018_150600_870449",
+    "user_id": "default",
+    "session_type": "voice_chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T15:06:00.870510",
+    "metadata": {
+      "transcribed_text": "What is his campaign?",
+      "response_length": 86,
+      "conversation_id": "conv_20251018_150341_default",
+      "voice_enabled": true
+    }
+  },
+  {
+    "id": "session_20251018_150614_651757",
+    "user_id": "default",
+    "session_type": "chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T15:06:14.651796",
+    "metadata": {
+      "question_length": 23,
+      "answer_length": 13,
+      "sources_count": 5,
+      "conversation_id": "conv_20251018_150341_default"
+    }
+  },
+  {
+    "id": "session_20251018_150616_011403",
+    "user_id": "default",
+    "session_type": "voice_chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T15:06:16.011439",
+    "metadata": {
+      "transcribed_text": "Not come pay come penny",
+      "response_length": 13,
+      "conversation_id": "conv_20251018_150341_default",
+      "voice_enabled": true
+    }
+  },
+  {
+    "id": "session_20251018_150630_359252",
+    "user_id": "default",
+    "session_type": "chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T15:06:30.359269",
+    "metadata": {
+      "question_length": 37,
+      "answer_length": 101,
+      "sources_count": 5,
+      "conversation_id": "conv_20251018_150341_default"
+    }
+  },
+  {
+    "id": "session_20251018_150631_969504",
+    "user_id": "default",
+    "session_type": "voice_chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T15:06:31.969570",
+    "metadata": {
+      "transcribed_text": "What is Navidya's working experience?",
+      "response_length": 101,
+      "conversation_id": "conv_20251018_150341_default",
+      "voice_enabled": true
+    }
+  },
+  {
+    "id": "session_20251018_150656_338744",
+    "user_id": "default",
+    "session_type": "chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T15:06:56.338762",
+    "metadata": {
+      "question_length": 20,
+      "answer_length": 649,
+      "sources_count": 5,
+      "conversation_id": "conv_20251018_150341_default"
+    }
+  },
+  {
+    "id": "session_20251018_150704_139634",
+    "user_id": "default",
+    "session_type": "chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T15:07:04.139658",
+    "metadata": {
+      "question_length": 25,
+      "answer_length": 392,
+      "sources_count": 5,
+      "conversation_id": "conv_20251018_150341_default"
+    }
+  },
+  {
+    "id": "session_20251018_150743_439593",
+    "user_id": "default",
+    "session_type": "chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T15:07:43.439608",
+    "metadata": {
+      "question_length": 45,
+      "answer_length": 132,
+      "sources_count": 5,
+      "conversation_id": "conv_20251018_150741_default"
+    }
+  },
+  {
+    "id": "session_20251018_150746_614069",
+    "user_id": "default",
+    "session_type": "voice_chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T15:07:46.614137",
+    "metadata": {
+      "transcribed_text": "I want to know about Nadeem Pereira's skills.",
+      "response_length": 132,
+      "conversation_id": "conv_20251018_150741_default",
+      "voice_enabled": true
+    }
+  },
+  {
+    "id": "session_20251018_151158_663696",
+    "user_id": "default",
+    "session_type": "chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T15:11:58.663711",
+    "metadata": {
+      "question_length": 44,
+      "answer_length": 534,
+      "sources_count": 5,
+      "conversation_id": "conv_20251018_151156_default"
+    }
+  },
+  {
+    "id": "session_20251018_151203_076979",
+    "user_id": "default",
+    "session_type": "voice_chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T15:12:03.076999",
+    "metadata": {
+      "transcribed_text": "I want to know about this uploaded document.",
+      "response_length": 534,
+      "conversation_id": "conv_20251018_151156_default",
+      "voice_enabled": true
+    }
+  },
+  {
+    "id": "session_20251018_151247_162190",
+    "user_id": "default",
+    "session_type": "chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T15:12:47.162205",
+    "metadata": {
+      "question_length": 57,
+      "answer_length": 88,
+      "sources_count": 5,
+      "conversation_id": "conv_20251018_151156_default"
+    }
+  },
+  {
+    "id": "session_20251018_151249_214506",
+    "user_id": "default",
+    "session_type": "voice_chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T15:12:49.214552",
+    "metadata": {
+      "transcribed_text": "Can you provide me the Sharanth Pereyra's contact number?",
+      "response_length": 88,
+      "conversation_id": "conv_20251018_151156_default",
+      "voice_enabled": true
+    }
+  },
+  {
+    "id": "session_20251018_151301_292329",
+    "user_id": "default",
+    "session_type": "chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T15:13:01.292346",
+    "metadata": {
+      "question_length": 25,
+      "answer_length": 57,
+      "sources_count": 5,
+      "conversation_id": "conv_20251018_151156_default"
+    }
+  },
+  {
+    "id": "session_20251018_151302_931730",
+    "user_id": "default",
+    "session_type": "voice_chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T15:13:02.931776",
+    "metadata": {
+      "transcribed_text": "What about email address?",
+      "response_length": 57,
+      "conversation_id": "conv_20251018_151156_default",
+      "voice_enabled": true
+    }
   }
 ]
