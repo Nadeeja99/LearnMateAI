@@ -48,8 +48,14 @@ if os.getenv("ENVIRONMENT") == "production":
     allowed_origins.extend([
         "https://learnmate-frontend.onrender.com",
         "https://learnmate-ai.onrender.com",
-        # Add your custom domain here
+        # Add your specific Render URLs here
     ])
+
+# Always add the specific Render URLs regardless of environment
+allowed_origins.extend([
+    "https://learnmate-frontend.onrender.com",
+    "https://learnmate-backend-koe5.onrender.com",
+])
 
 app.add_middleware(
     CORSMiddleware,

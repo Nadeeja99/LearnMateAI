@@ -36,10 +36,10 @@ services:
     routes:
       - type: rewrite
         source: /api/*
-        destination: https://learnmate-backend.onrender.com/$1
+        destination: https://learnmate-backend-koe5.onrender.com/$1
       - type: rewrite
         source: /*
         destination: /index.html
     envVars:
       - key: VITE_API_URL
-        value: https://learnmate-backend.onrender.com
+        value: https://learnmate-backend-koe5.onrender.com
