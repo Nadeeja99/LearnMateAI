@@ -1,0 +1,87 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* LearnMate AI Design System - Dark Theme */
+    --background: 222 47% 11%;
+    --foreground: 210 40% 98%;
+
+    --card: 217 33% 17%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 224 71% 4%;
+    --popover-foreground: 210 40% 98%;
+
+    /* Primary: Indigo */
+    --primary: 239 84% 67%;
+    --primary-foreground: 210 40% 98%;
+    --primary-glow: 239 84% 77%;
+
+    /* Secondary: Purple */
+    --secondary: 258 90% 66%;
+    --secondary-foreground: 210 40% 98%;
+
+    /* Accent: Cyan */
+    --accent: 189 94% 43%;
+    --accent-foreground: 210 40% 98%;
+
+    /* Success: Green */
+    --success: 142 76% 36%;
+    --success-foreground: 210 40% 98%;
+
+    /* Error: Red */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+
+    /* Warning: Amber */
+    --warning: 38 92% 50%;
+    --warning-foreground: 210 40% 98%;
+
+    /* Muted & Borders */
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+
+    --border: 217 33% 20%;
+    --input: 217 33% 20%;
+    --ring: 239 84% 67%;
+
+    --radius: 0.75rem;
+
+    /* Sidebar */
+    --sidebar-background: 222 47% 11%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 239 84% 67%;
+    --sidebar-primary-foreground: 210 40% 98%;
+    --sidebar-accent: 217 33% 17%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217 33% 20%;
+    --sidebar-ring: 239 84% 67%;
+
+    /* Gradients */
+    --gradient-hero: linear-gradient(135deg, hsl(258 90% 66%) 0%, hsl(239 84% 67%) 50%, hsl(189 94% 43%) 100%);
+    --gradient-card: linear-gradient(135deg, hsl(217 33% 17%) 0%, hsl(222 47% 11%) 100%);
+    
+    /* Shadows */
+    --shadow-glow: 0 0 40px hsla(239, 84%, 67%, 0.3);
+    --shadow-card: 0 10px 30px -10px hsla(222, 47%, 11%, 0.5);
+    
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
