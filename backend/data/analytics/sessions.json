@@ -1,0 +1,274 @@
+[
+  {
+    "id": "session_20251018_142839_881377",
+    "user_id": "default",
+    "session_type": "upload",
+    "document_name": "Krybe_NDA_Docusign_Blank_Template.docx.pdf",
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T14:28:39.881406",
+    "metadata": {
+      "file_size": 199790,
+      "chunks_count": 5,
+      "file_type": "pdf"
+    }
+  },
+  {
+    "id": "session_20251018_142853_320856",
+    "user_id": "default",
+    "session_type": "question",
+    "document_name": "Krybe_NDA_Docusign_Blank_Template.docx.pdf",
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T14:28:53.320871",
+    "metadata": {
+      "question_length": 33,
+      "answer_length": 315,
+      "sources_count": 5,
+      "conversation_id": "conv_20251018_142847_default"
+    }
+  },
+  {
+    "id": "session_20251018_142908_823370",
+    "user_id": "default",
+    "session_type": "question",
+    "document_name": "Krybe_NDA_Docusign_Blank_Template.docx.pdf",
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T14:29:08.823384",
+    "metadata": {
+      "question_length": 23,
+      "answer_length": 42,
+      "sources_count": 5,
+      "conversation_id": "conv_20251018_142847_default"
+    }
+  },
+  {
+    "id": "session_20251018_142922_906948",
+    "user_id": "default",
+    "session_type": "question",
+    "document_name": "Krybe_NDA_Docusign_Blank_Template.docx.pdf",
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T14:29:22.906966",
+    "metadata": {
+      "question_length": 28,
+      "answer_length": 13,
+      "sources_count": 5,
+      "conversation_id": "conv_20251018_142847_default"
+    }
+  },
+  {
+    "id": "session_20251018_142945_788359",
+    "user_id": "default",
+    "session_type": "question",
+    "document_name": "Krybe_NDA_Docusign_Blank_Template.docx.pdf",
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T14:29:45.788371",
+    "metadata": {
+      "question_length": 33,
+      "answer_length": 273,
+      "sources_count": 5,
+      "conversation_id": "conv_20251018_142931_default"
+    }
+  },
+  {
+    "id": "session_20251018_142954_304710",
+    "user_id": "default",
+    "session_type": "summary",
+    "document_name": "Krybe_NDA_Docusign_Blank_Template.docx.pdf",
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T14:29:54.304764",
+    "metadata": {
+      "summary_length": 1439,
+      "document_count": 1,
+      "context_length": 3553
+    }
+  },
+  {
+    "id": "session_20251018_143102_689294",
+    "user_id": "default",
+    "session_type": "upload",
+    "document_name": "Nadeeja Perera copy (5) (1).pdf",
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T14:31:02.689379",
+    "metadata": {
+      "file_size": 48860,
+      "chunks_count": 5,
+      "file_type": "pdf"
+    }
+  },
+  {
+    "id": "session_20251018_143156_457534",
+    "user_id": "default",
+    "session_type": "upload",
+    "document_name": "credibility-interviews-information.pdf",
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T14:31:56.457564",
+    "metadata": {
+      "file_size": 40688,
+      "chunks_count": 3,
+      "file_type": "pdf"
+    }
+  },
+  {
+    "id": "session_20251018_143208_135859",
+    "user_id": "default",
+    "session_type": "question",
+    "document_name": "Krybe_NDA_Docusign_Blank_Template.docx.pdf",
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T14:32:08.135889",
+    "metadata": {
+      "question_length": 33,
+      "answer_length": 347,
+      "sources_count": 5,
+      "conversation_id": "conv_20251018_143203_default"
+    }
+  },
+  {
+    "id": "session_20251018_143251_137868",
+    "user_id": "default",
+    "session_type": "summary",
+    "document_name": "Krybe_NDA_Docusign_Blank_Template.docx.pdf",
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T14:32:51.137923",
+    "metadata": {
+      "summary_length": 1322,
+      "document_count": 3,
+      "context_length": 11034
+    }
+  },
+  {
+    "id": "session_20251018_143507_899546",
+    "user_id": "default",
+    "session_type": "quiz",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T14:35:07.899562",
+    "metadata": {
+      "quiz_score": 3,
+      "total_questions": 5,
+      "score_percentage": 60,
+      "completed_at": "2025-10-18T14:35:00Z"
+    }
+  },
+  {
+    "id": "session_20251018_143546_248629",
+    "user_id": "default",
+    "session_type": "upload",
+    "document_name": "Nadeeja Perera copy (5) (2).pdf",
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T14:35:46.248692",
+    "metadata": {
+      "file_size": 52079,
+      "chunks_count": 5,
+      "file_type": "pdf"
+    }
+  },
+  {
+    "id": "session_20251018_143559_921523",
+    "user_id": "default",
+    "session_type": "chat",
+    "document_name": "Nadeeja Perera copy (5) (2).pdf",
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T14:35:59.921533",
+    "metadata": {
+      "question_length": 33,
+      "answer_length": 362,
+      "sources_count": 5,
+      "conversation_id": "conv_20251018_143552_default"
+    }
+  },
+  {
+    "id": "session_20251018_143619_976360",
+    "user_id": "default",
+    "session_type": "quiz",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T14:36:19.976428",
+    "metadata": {
+      "quiz_score": 1,
+      "total_questions": 1,
+      "score_percentage": 100,
+      "completed_at": "2025-10-18T09:06:19.968Z"
+    }
+  },
+  {
+    "id": "session_20251018_144037_509809",
+    "user_id": "default",
+    "session_type": "upload",
+    "document_name": "Nadeeja Perera copy (3).pdf",
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T14:40:37.509858",
+    "metadata": {
+      "file_size": 77135,
+      "chunks_count": 5,
+      "file_type": "pdf"
+    }
+  },
+  {
+    "id": "session_20251018_144046_830843",
+    "user_id": "default",
+    "session_type": "chat",
+    "document_name": "Nadeeja Perera copy (3).pdf",
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T14:40:46.830869",
+    "metadata": {
+      "question_length": 33,
+      "answer_length": 144,
+      "sources_count": 5,
+      "conversation_id": "conv_20251018_144042_default"
+    }
+  },
+  {
+    "id": "session_20251018_144059_835693",
+    "user_id": "default",
+    "session_type": "chat",
+    "document_name": "Nadeeja Perera copy (3).pdf",
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T14:40:59.835714",
+    "metadata": {
+      "question_length": 27,
+      "answer_length": 820,
+      "sources_count": 5,
+      "conversation_id": "conv_20251018_144051_default"
+    }
+  },
+  {
+    "id": "session_20251018_144113_332757",
+    "user_id": "default",
+    "session_type": "upload",
+    "document_name": "Recommendation Letter for Mr.Nadeeja Perera.pdf",
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T14:41:13.332785",
+    "metadata": {
+      "file_size": 243494,
+      "chunks_count": 3,
+      "file_type": "pdf"
+    }
+  },
+  {
+    "id": "session_20251018_144120_797199",
+    "user_id": "default",
+    "session_type": "chat",
+    "document_name": "Nadeeja Perera copy (3).pdf",
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T14:41:20.797205",
+    "metadata": {
+      "question_length": 27,
+      "answer_length": 969,
+      "sources_count": 5,
+      "conversation_id": "conv_20251018_144105_default"
+    }
+  },
+  {
+    "id": "session_20251018_144305_946013",
+    "user_id": "default",
+    "session_type": "quiz",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T14:43:05.946099",
+    "metadata": {
+      "quiz_score": 1,
+      "total_questions": 1,
+      "score_percentage": 100,
+      "completed_at": "2025-10-18T09:13:05.942Z"
+    }
+  }
+]

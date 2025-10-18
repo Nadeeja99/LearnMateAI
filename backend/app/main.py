@@ -13,6 +13,8 @@ from .document_processor import DocumentProcessor
 from .vector_store import VectorStore
 from .rag_chain import RAGChain
 from .langfuse_config import langfuse_config
+from .conversation_memory import conversation_memory
+from .learning_analytics import learning_analytics
 
 # Load environment variables
 load_dotenv()
@@ -122,6 +124,20 @@ async def upload_document(file: UploadFile = File(...)):
         
         logger.info(f"Document {file.filename} processed and added to vector store successfully")
         
+        # Track analytics for upload
+        if learning_analytics:
+            learning_analytics.track_session(
+                user_id="default",  # Could be passed from frontend
+                session_type="upload",
+                document_name=file.filename,
+                duration_seconds=0,
+                metadata={
+                    "file_size": len(content),
+                    "chunks_count": len(documents),
+                    "file_type": "pdf"
+                }
+            )
+        
         return {
             "message": "Document uploaded and processed successfully",
             "details": {
@@ -159,8 +175,17 @@ async def ask_question(question_data: dict):
         session_docs = list(current_session_documents.keys()) if current_session_documents else None
         logger.info(f"Using documents from current session: {session_docs}")
         
-        # Use RAG chain to answer question
-        result = await rag_chain.answer_question(question, document_names=session_docs)
+        # Get user_id and conversation_id from request
+        user_id = question_data.get("user_id", "default")
+        conversation_id = question_data.get("conversation_id", "default")
+        
+        # Use RAG chain to answer question with conversation memory
+        result = await rag_chain.answer_question(
+            question=question, 
+            document_names=session_docs,
+            conversation_id=conversation_id,
+            user_id=user_id
+        )
         
         return result
         
@@ -219,8 +244,11 @@ async def generate_summary(summary_data: dict):
         
         logger.info(f"Generating summary for: {summary_docs or 'all documents'}")
         
-        # Use RAG chain to generate summary
-        summary = await rag_chain.generate_summary(summary_docs)
+        # Get user_id from request
+        user_id = summary_data.get("user_id", "default")
+        
+        # Use RAG chain to generate summary with analytics
+        summary = await rag_chain.generate_summary(summary_docs, user_id=user_id)
         
         return {
             "summary": summary,
@@ -358,6 +386,144 @@ async def get_vector_store_info():
     except Exception as e:
         logger.error(f"Vector store info error: {e}")
         raise HTTPException(status_code=500, detail="Error getting vector store info")
+
+# ===== CONVERSATION MEMORY ENDPOINTS =====
+
+@app.post("/conversations")
+async def create_conversation(conversation_data: dict):
+    """Create a new conversation"""
+    try:
+        user_id = conversation_data.get("user_id", "default")
+        title = conversation_data.get("title", None)
+        document_context = conversation_data.get("document_context", [])
+        
+        conversation_id = conversation_memory.create_conversation(
+            user_id=user_id,
+            title=title,
+            document_context=document_context
+        )
+        
+        return {
+            "conversation_id": conversation_id,
+            "message": "Conversation created successfully"
+        }
+    except Exception as e:
+        logger.error(f"Error creating conversation: {e}")
+        raise HTTPException(status_code=500, detail=f"Error creating conversation: {str(e)}")
+
+@app.get("/conversations/{conversation_id}/history")
+async def get_conversation_history(conversation_id: str, limit: int = 10):
+    """Get conversation history"""
+    try:
+        history = conversation_memory.get_conversation_history(conversation_id, limit)
+        context = conversation_memory.get_conversation_context(conversation_id)
+        
+        return {
+            "conversation_id": conversation_id,
+            "history": history,
+            "context": context
+        }
+    except Exception as e:
+        logger.error(f"Error getting conversation history: {e}")
+        raise HTTPException(status_code=500, detail=f"Error getting conversation history: {str(e)}")
+
+@app.get("/conversations/user/{user_id}")
+async def get_user_conversations(user_id: str, limit: int = 20):
+    """Get all conversations for a user"""
+    try:
+        conversations = conversation_memory.get_user_conversations(user_id, limit)
+        return {
+            "user_id": user_id,
+            "conversations": conversations
+        }
+    except Exception as e:
+        logger.error(f"Error getting user conversations: {e}")
+        raise HTTPException(status_code=500, detail=f"Error getting user conversations: {str(e)}")
+
+@app.delete("/conversations/{conversation_id}")
+async def delete_conversation(conversation_id: str):
+    """Delete a conversation"""
+    try:
+        conversation_memory.delete_conversation(conversation_id)
+        return {"message": f"Conversation {conversation_id} deleted successfully"}
+    except Exception as e:
+        logger.error(f"Error deleting conversation: {e}")
+        raise HTTPException(status_code=500, detail=f"Error deleting conversation: {str(e)}")
+
+# ===== LEARNING ANALYTICS ENDPOINTS =====
+
+@app.get("/analytics/user/{user_id}")
+async def get_user_analytics(user_id: str):
+    """Get comprehensive analytics for a user"""
+    try:
+        analytics = learning_analytics.get_user_analytics(user_id)
+        return analytics
+    except Exception as e:
+        logger.error(f"Error getting user analytics: {e}")
+        raise HTTPException(status_code=500, detail=f"Error getting user analytics: {str(e)}")
+
+@app.get("/analytics/global")
+async def get_global_analytics():
+    """Get global analytics across all users"""
+    try:
+        analytics = learning_analytics.get_global_analytics()
+        return analytics
+    except Exception as e:
+        logger.error(f"Error getting global analytics: {e}")
+        raise HTTPException(status_code=500, detail=f"Error getting global analytics: {str(e)}")
+
+@app.get("/analytics/performance-metrics")
+async def get_performance_metrics(metric_name: str = None, days: int = 30):
+    """Get performance metrics"""
+    try:
+        metrics = learning_analytics.get_performance_metrics(metric_name, days)
+        return {
+            "metrics": metrics,
+            "metric_name": metric_name,
+            "days": days
+        }
+    except Exception as e:
+        logger.error(f"Error getting performance metrics: {e}")
+        raise HTTPException(status_code=500, detail=f"Error getting performance metrics: {str(e)}")
+
+@app.post("/analytics/track-quiz")
+async def track_quiz_completion(quiz_data: dict):
+    """Track quiz completion analytics"""
+    try:
+        user_id = quiz_data.get("user_id", "default")
+        quiz_score = quiz_data.get("quiz_score", 0)
+        total_questions = quiz_data.get("total_questions", 1)
+        score_percentage = quiz_data.get("score_percentage", 0)
+        
+        # Track quiz completion session
+        learning_analytics.track_session(
+            user_id=user_id,
+            session_type="quiz",
+            document_name=None,
+            duration_seconds=0,
+            metadata={
+                "quiz_score": quiz_score,
+                "total_questions": total_questions,
+                "score_percentage": score_percentage,
+                "completed_at": quiz_data.get("completed_at")
+            }
+        )
+        
+        # Add performance metric for quiz score
+        learning_analytics.add_performance_metric(
+            metric_name="quiz_score_percentage",
+            value=score_percentage,
+            context={
+                "user_id": user_id,
+                "quiz_score": quiz_score,
+                "total_questions": total_questions
+            }
+        )
+        
+        return {"message": "Quiz completion tracked successfully"}
+    except Exception as e:
+        logger.error(f"Error tracking quiz completion: {e}")
+        raise HTTPException(status_code=500, detail=f"Error tracking quiz completion: {str(e)}")
 
 if __name__ == "__main__":
     uvicorn.run(

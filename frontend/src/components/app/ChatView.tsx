@@ -3,14 +3,26 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Copy, ThumbsUp, ThumbsDown, Sparkles, Loader2 } from "lucide-react";
+import { Send, Copy, ThumbsUp, ThumbsDown, Sparkles, Loader2, MessageSquare, Plus, History } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Message {
+  id: string;
   role: "user" | "assistant";
   content: string;
   sources?: string[];
-  timestamp: Date;
+  timestamp: string;
+  metadata?: any;
+}
+
+interface Conversation {
+  id: string;
+  title: string;
+  message_count: number;
+  created_at: string;
+  updated_at: string;
+  document_context: string[];
+  summary?: string;
 }
 
 interface ChatViewProps {
@@ -21,6 +33,9 @@ const ChatView = ({ documents }: ChatViewProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [showConversations, setShowConversations] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -37,6 +52,71 @@ const ChatView = ({ documents }: ChatViewProps) => {
     }
   }, [messages]);
 
+  // Load conversations on component mount
+  useEffect(() => {
+    loadConversations();
+  }, []);
+
+  const loadConversations = async () => {
+    try {
+      const response = await fetch("http://localhost:8000/conversations/user/default");
+      if (response.ok) {
+        const data = await response.json();
+        setConversations(data.conversations || []);
+      }
+    } catch (error) {
+      console.error("Error loading conversations:", error);
+    }
+  };
+
+  const createNewConversation = async (showToast: boolean = true) => {
+    try {
+      const response = await fetch("http://localhost:8000/conversations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: "default",
+          title: `Chat ${new Date().toLocaleString()}`,
+          document_context: documents
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setCurrentConversationId(data.conversation_id);
+        setMessages([]);
+        loadConversations();
+        
+        if (showToast) {
+          toast({
+            title: "New conversation started",
+            description: "You can now ask questions with full conversation context"
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error creating conversation:", error);
+    }
+  };
+
+  const loadConversation = async (conversationId: string) => {
+    try {
+      const response = await fetch(`http://localhost:8000/conversations/${conversationId}/history`);
+      if (response.ok) {
+        const data = await response.json();
+        setCurrentConversationId(conversationId);
+        setMessages(data.history || []);
+        setShowConversations(false);
+        toast({
+          title: "Conversation loaded",
+          description: `Loaded ${data.history.length} messages`
+        });
+      }
+    } catch (error) {
+      console.error("Error loading conversation:", error);
+    }
+  };
+
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
 
@@ -49,10 +129,17 @@ const ChatView = ({ documents }: ChatViewProps) => {
       return;
     }
 
+    // Create conversation if none exists (without showing toast)
+    if (!currentConversationId) {
+      await createNewConversation(false); // Don't show toast for automatic conversation creation
+      if (!currentConversationId) return; // Wait for conversation to be created
+    }
+
     const userMessage: Message = {
+      id: `msg_${Date.now()}`,
       role: "user",
       content: input,
-      timestamp: new Date(),
+      timestamp: new Date().toISOString(),
     };
 
     setMessages(prev => [...prev, userMessage]);
@@ -71,19 +158,26 @@ const ChatView = ({ documents }: ChatViewProps) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           question: input,
-          session_documents: sessionData.documents
+          session_documents: sessionData.documents,
+          user_id: "default",
+          conversation_id: currentConversationId
         }),
       });
 
       if (response.ok) {
         const data = await response.json();
         const assistantMessage: Message = {
+          id: `msg_${Date.now()}_assistant`,
           role: "assistant",
           content: data.answer,
           sources: data.sources || [],
-          timestamp: new Date(),
+          timestamp: new Date().toISOString(),
+          metadata: { conversation_id: data.conversation_id }
         };
         setMessages(prev => [...prev, assistantMessage]);
+        
+        // Refresh conversations to show updated message count
+        loadConversations();
       } else {
         throw new Error("Failed to get response");
       }
@@ -114,7 +208,37 @@ const ChatView = ({ documents }: ChatViewProps) => {
     <div className="flex flex-col h-[calc(100vh-12rem)]">
       {/* Header */}
       <div className="mb-6">
-        <h2 className="text-3xl font-bold mb-2">Chat with Your Documents</h2>
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-3xl font-bold">Chat with Your Documents</h2>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowConversations(!showConversations)}
+            >
+              <History className="h-4 w-4 mr-2" />
+              Conversations ({conversations.length})
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => createNewConversation(true)}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              New Chat
+            </Button>
+          </div>
+        </div>
+        
+        {currentConversationId && (
+          <div className="flex items-center gap-2 mb-2">
+            <MessageSquare className="h-4 w-4 text-primary" />
+            <span className="text-sm text-muted-foreground">
+              Active conversation: {currentConversationId.split('_').slice(-1)[0]}
+            </span>
+          </div>
+        )}
+        
         {documents.length > 0 ? (
           <p className="text-muted-foreground">
             Chatting about: <span className="text-primary font-medium">{documents[documents.length - 1]}</span>
@@ -123,6 +247,47 @@ const ChatView = ({ documents }: ChatViewProps) => {
           <p className="text-muted-foreground">Upload a document to start chatting</p>
         )}
       </div>
+
+      {/* Conversations Sidebar */}
+      {showConversations && (
+        <Card className="mb-4 p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold">Previous Conversations</h3>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowConversations(false)}
+            >
+              ×
+            </Button>
+          </div>
+          <ScrollArea className="h-40">
+            <div className="space-y-2">
+              {conversations.map((conv) => (
+                <div
+                  key={conv.id}
+                  className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                    conv.id === currentConversationId
+                      ? "bg-primary/10 border-primary"
+                      : "hover:bg-muted"
+                  }`}
+                  onClick={() => loadConversation(conv.id)}
+                >
+                  <div className="font-medium text-sm truncate">{conv.title}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {conv.message_count} messages • {new Date(conv.updated_at).toLocaleDateString()}
+                  </div>
+                </div>
+              ))}
+              {conversations.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  No previous conversations found
+                </p>
+              )}
+            </div>
+          </ScrollArea>
+        </Card>
+      )}
 
       {/* Messages */}
       <Card className="flex-1 mb-4 overflow-hidden">
@@ -170,6 +335,9 @@ const ChatView = ({ documents }: ChatViewProps) => {
                     }`}
                   >
                     <p className="whitespace-pre-wrap">{message.content}</p>
+                    <div className="text-xs text-muted-foreground mt-2">
+                      {new Date(message.timestamp).toLocaleTimeString()}
+                    </div>
                     
                     {message.role === "assistant" && (
                       <div className="mt-3 pt-3 border-t border-border flex items-center gap-2">

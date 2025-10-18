@@ -1,0 +1,353 @@
+{
+  "conv_20251018_142847_default": {
+    "id": "conv_20251018_142847_default",
+    "user_id": "default",
+    "title": "Chat 10/18/2025, 2:28:47 PM",
+    "messages": [
+      {
+        "id": "msg_20251018_142853_319417",
+        "role": "user",
+        "content": "What are the main topics covered?",
+        "timestamp": "2025-10-18T14:28:53.319465",
+        "metadata": {
+          "document_names": [
+            "Krybe_NDA_Docusign_Blank_Template.docx.pdf"
+          ]
+        }
+      },
+      {
+        "id": "msg_20251018_142853_320373",
+        "role": "assistant",
+        "content": "The main topics covered in the conversation history are the non-circumvention/confidentiality agreement between KRYBE LIMITED and the Contracting Party. Key points include the protection of confidential information, non-disclosure, termination clauses, governing law and remedies, and the duration of the agreement.",
+        "timestamp": "2025-10-18T14:28:53.320394",
+        "metadata": {
+          "sources": [
+            "Krybe_NDA_Docusign_Blank_Template.docx.pdf",
+            "Krybe_NDA_Docusign_Blank_Template.docx.pdf",
+            "Krybe_NDA_Docusign_Blank_Template.docx.pdf",
+            "Krybe_NDA_Docusign_Blank_Template.docx.pdf",
+            "Krybe_NDA_Docusign_Blank_Template.docx.pdf"
+          ],
+          "context_length": 3553
+        }
+      },
+      {
+        "id": "msg_20251018_142908_821754",
+        "role": "user",
+        "content": "whats the employee name",
+        "timestamp": "2025-10-18T14:29:08.821799",
+        "metadata": {
+          "document_names": [
+            "Krybe_NDA_Docusign_Blank_Template.docx.pdf"
+          ]
+        }
+      },
+      {
+        "id": "msg_20251018_142908_822861",
+        "role": "assistant",
+        "content": "The employee's name is Manuja Jayawardana.",
+        "timestamp": "2025-10-18T14:29:08.822878",
+        "metadata": {
+          "sources": [
+            "Krybe_NDA_Docusign_Blank_Template.docx.pdf",
+            "Krybe_NDA_Docusign_Blank_Template.docx.pdf",
+            "Krybe_NDA_Docusign_Blank_Template.docx.pdf",
+            "Krybe_NDA_Docusign_Blank_Template.docx.pdf",
+            "Krybe_NDA_Docusign_Blank_Template.docx.pdf"
+          ],
+          "context_length": 3553
+        }
+      },
+      {
+        "id": "msg_20251018_142922_905266",
+        "role": "user",
+        "content": "I need employee not employer",
+        "timestamp": "2025-10-18T14:29:22.905298",
+        "metadata": {
+          "document_names": [
+            "Krybe_NDA_Docusign_Blank_Template.docx.pdf"
+          ]
+        }
+      },
+      {
+        "id": "msg_20251018_142922_906280",
+        "role": "assistant",
+        "content": "I don't know.",
+        "timestamp": "2025-10-18T14:29:22.906299",
+        "metadata": {
+          "sources": [
+            "Krybe_NDA_Docusign_Blank_Template.docx.pdf",
+            "Krybe_NDA_Docusign_Blank_Template.docx.pdf",
+            "Krybe_NDA_Docusign_Blank_Template.docx.pdf",
+            "Krybe_NDA_Docusign_Blank_Template.docx.pdf",
+            "Krybe_NDA_Docusign_Blank_Template.docx.pdf"
+          ],
+          "context_length": 3553
+        }
+      }
+    ],
+    "created_at": "2025-10-18T14:28:47.216825",
+    "updated_at": "2025-10-18T14:29:22.906302",
+    "document_context": [
+      "Krybe_NDA_Docusign_Blank_Template.docx.pdf"
+    ],
+    "summary": null
+  },
+  "conv_20251018_142931_default": {
+    "id": "conv_20251018_142931_default",
+    "user_id": "default",
+    "title": "Chat 10/18/2025, 2:29:31 PM",
+    "messages": [
+      {
+        "id": "msg_20251018_142945_786501",
+        "role": "user",
+        "content": "What are the main topics covered?",
+        "timestamp": "2025-10-18T14:29:45.786549",
+        "metadata": {
+          "document_names": [
+            "Krybe_NDA_Docusign_Blank_Template.docx.pdf"
+          ]
+        }
+      },
+      {
+        "id": "msg_20251018_142945_787668",
+        "role": "assistant",
+        "content": "The main topics covered in the context provided are non-circumvention/confidentiality agreement, protection of confidential information, termination of the agreement, governing law and remedies, and the importance of not disclosing proprietary information to third parties.",
+        "timestamp": "2025-10-18T14:29:45.787688",
+        "metadata": {
+          "sources": [
+            "Krybe_NDA_Docusign_Blank_Template.docx.pdf",
+            "Krybe_NDA_Docusign_Blank_Template.docx.pdf",
+            "Krybe_NDA_Docusign_Blank_Template.docx.pdf",
+            "Krybe_NDA_Docusign_Blank_Template.docx.pdf",
+            "Krybe_NDA_Docusign_Blank_Template.docx.pdf"
+          ],
+          "context_length": 3553
+        }
+      }
+    ],
+    "created_at": "2025-10-18T14:29:31.611869",
+    "updated_at": "2025-10-18T14:29:45.787690",
+    "document_context": [
+      "Krybe_NDA_Docusign_Blank_Template.docx.pdf"
+    ],
+    "summary": null
+  },
+  "conv_20251018_143203_default": {
+    "id": "conv_20251018_143203_default",
+    "user_id": "default",
+    "title": "Chat 10/18/2025, 2:32:03 PM",
+    "messages": [
+      {
+        "id": "msg_20251018_143208_133813",
+        "role": "user",
+        "content": "What are the main topics covered?",
+        "timestamp": "2025-10-18T14:32:08.133865",
+        "metadata": {
+          "document_names": [
+            "Krybe_NDA_Docusign_Blank_Template.docx.pdf",
+            "Nadeeja Perera copy (5) (1).pdf",
+            "credibility-interviews-information.pdf"
+          ]
+        }
+      },
+      {
+        "id": "msg_20251018_143208_135053",
+        "role": "assistant",
+        "content": "The main topics covered in the conversation history include the course being studied, professional recognition, qualifications received, funding studies, accommodation arrangements, future plans after finishing the course, intentions to work in the UK, reasons for studying in the UK, choice of university, previous education, and work experience.",
+        "timestamp": "2025-10-18T14:32:08.135081",
+        "metadata": {
+          "sources": [
+            "credibility-interviews-information.pdf",
+            "credibility-interviews-information.pdf",
+            "credibility-interviews-information.pdf",
+            "Krybe_NDA_Docusign_Blank_Template.docx.pdf",
+            "Nadeeja Perera copy (5) (1).pdf"
+          ],
+          "context_length": 3864
+        }
+      }
+    ],
+    "created_at": "2025-10-18T14:32:03.932194",
+    "updated_at": "2025-10-18T14:32:08.135084",
+    "document_context": [
+      "Krybe_NDA_Docusign_Blank_Template.docx.pdf",
+      "Nadeeja Perera copy (5) (1).pdf",
+      "credibility-interviews-information.pdf"
+    ],
+    "summary": null
+  },
+  "conv_20251018_143552_default": {
+    "id": "conv_20251018_143552_default",
+    "user_id": "default",
+    "title": "Chat 10/18/2025, 2:35:52 PM",
+    "messages": [
+      {
+        "id": "msg_20251018_143559_919610",
+        "role": "user",
+        "content": "What are the main topics covered?",
+        "timestamp": "2025-10-18T14:35:59.919639",
+        "metadata": {
+          "document_names": [
+            "Nadeeja Perera copy (5) (2).pdf"
+          ]
+        }
+      },
+      {
+        "id": "msg_20251018_143559_920768",
+        "role": "assistant",
+        "content": "The main topics covered include software engineering projects involving project management platforms, cyberbullying detection systems, and meal plan recommendation systems for diabetes patients. Additionally, there is mention of technical skills, work experience, education, and goals for advancing expertise in software engineering through a Master's Programme.",
+        "timestamp": "2025-10-18T14:35:59.920784",
+        "metadata": {
+          "sources": [
+            "Nadeeja Perera copy (5) (2).pdf",
+            "Nadeeja Perera copy (5) (2).pdf",
+            "Nadeeja Perera copy (5) (2).pdf",
+            "Nadeeja Perera copy (5) (2).pdf",
+            "Nadeeja Perera copy (5) (2).pdf"
+          ],
+          "context_length": 4814
+        }
+      }
+    ],
+    "created_at": "2025-10-18T14:35:52.497493",
+    "updated_at": "2025-10-18T14:35:59.920788",
+    "document_context": [
+      "Nadeeja Perera copy (5) (2).pdf"
+    ],
+    "summary": null
+  },
+  "conv_20251018_143637_default": {
+    "id": "conv_20251018_143637_default",
+    "user_id": "default",
+    "title": "Chat 10/18/2025, 2:36:37 PM",
+    "messages": [],
+    "created_at": "2025-10-18T14:36:37.233930",
+    "updated_at": "2025-10-18T14:36:37.233931",
+    "document_context": [
+      "Nadeeja Perera copy (5) (2).pdf"
+    ],
+    "summary": null
+  },
+  "conv_20251018_144042_default": {
+    "id": "conv_20251018_144042_default",
+    "user_id": "default",
+    "title": "Chat 10/18/2025, 2:40:42 PM",
+    "messages": [
+      {
+        "id": "msg_20251018_144046_827825",
+        "role": "user",
+        "content": "What are the main topics covered?",
+        "timestamp": "2025-10-18T14:40:46.827876",
+        "metadata": {
+          "document_names": [
+            "Nadeeja Perera copy (3).pdf"
+          ]
+        }
+      },
+      {
+        "id": "msg_20251018_144046_829681",
+        "role": "assistant",
+        "content": "The main topics covered include software development projects, technical skills, education background, work experience, and contact information.",
+        "timestamp": "2025-10-18T14:40:46.829709",
+        "metadata": {
+          "sources": [
+            "Nadeeja Perera copy (3).pdf",
+            "Nadeeja Perera copy (3).pdf",
+            "Nadeeja Perera copy (3).pdf",
+            "Nadeeja Perera copy (3).pdf",
+            "Nadeeja Perera copy (3).pdf"
+          ],
+          "context_length": 4728
+        }
+      }
+    ],
+    "created_at": "2025-10-18T14:40:42.164626",
+    "updated_at": "2025-10-18T14:40:46.829713",
+    "document_context": [
+      "Nadeeja Perera copy (3).pdf"
+    ],
+    "summary": null
+  },
+  "conv_20251018_144051_default": {
+    "id": "conv_20251018_144051_default",
+    "user_id": "default",
+    "title": "Chat 10/18/2025, 2:40:51 PM",
+    "messages": [
+      {
+        "id": "msg_20251018_144059_832667",
+        "role": "user",
+        "content": "What are the key takeaways?",
+        "timestamp": "2025-10-18T14:40:59.832755",
+        "metadata": {
+          "document_names": [
+            "Nadeeja Perera copy (3).pdf"
+          ]
+        }
+      },
+      {
+        "id": "msg_20251018_144059_834620",
+        "role": "assistant",
+        "content": "The key takeaways from the provided context and conversation history are:\n- Nadeeja Perera is an accomplished Software Engineer with experience in enterprise software development.\n- Nadeeja has worked on projects such as a Resource and Project Management System and a Cyberbullying Detection System.\n- Nadeeja has expertise in a variety of technologies such as React.js, Node.js, Python, PostgreSQL, NLP, HTML, CSS, JavaScript, Java, Git, Sequelize.js, GCP, MongoDB, Flask, Deep Learning, and Machine Learning.\n- Nadeeja has completed a BSc (Hons) in Computer Science from the University of Westminster, UK, with a GPA of Upper Second Honours.\n- Nadeeja is looking to advance her expertise through a Master's Programme in Software Engineering and is particularly interested in exploring emerging technologies like AI/ML.",
+        "timestamp": "2025-10-18T14:40:59.834650",
+        "metadata": {
+          "sources": [
+            "Nadeeja Perera copy (3).pdf",
+            "Nadeeja Perera copy (3).pdf",
+            "Nadeeja Perera copy (3).pdf",
+            "Nadeeja Perera copy (3).pdf",
+            "Nadeeja Perera copy (3).pdf"
+          ],
+          "context_length": 4728
+        }
+      }
+    ],
+    "created_at": "2025-10-18T14:40:51.712385",
+    "updated_at": "2025-10-18T14:40:59.834654",
+    "document_context": [
+      "Nadeeja Perera copy (3).pdf"
+    ],
+    "summary": null
+  },
+  "conv_20251018_144105_default": {
+    "id": "conv_20251018_144105_default",
+    "user_id": "default",
+    "title": "Chat 10/18/2025, 2:41:05 PM",
+    "messages": [
+      {
+        "id": "msg_20251018_144120_795854",
+        "role": "user",
+        "content": "What are the key takeaways?",
+        "timestamp": "2025-10-18T14:41:20.795871",
+        "metadata": {
+          "document_names": [
+            "Nadeeja Perera copy (3).pdf",
+            "Recommendation Letter for Mr.Nadeeja Perera.pdf"
+          ]
+        }
+      },
+      {
+        "id": "msg_20251018_144120_796611",
+        "role": "assistant",
+        "content": "The key takeaways are that Nadeeja Perera is a motivated, adaptable, and capable individual with strong academic maturity and research potential. He has excellent technical proficiency, communication abilities, and has shown initiative and adaptability in handling challenging issues. Nadeeja has experience in managing the complete development lifecycle, project management, and has worked on projects involving technologies such as Python, React.js, Node.js, MongoDB, NLP, among others. He has also developed systems like a Cyberbullying Detection System and a Meal Plan Recommendation System for Diabetes Patients. Nadeeja's skills include problem-solving, project management, adaptability, continuous learning, technical documentation, and cross-functional collaboration. Additionally, references from Gayanath Chandrasena and Sherantha Perera speak highly of Nadeeja's potential to excel in advanced studies and make significant contributions to academic programs.",
+        "timestamp": "2025-10-18T14:41:20.796619",
+        "metadata": {
+          "sources": [
+            "Recommendation Letter for Mr.Nadeeja Perera.pdf",
+            "Nadeeja Perera copy (3).pdf",
+            "Nadeeja Perera copy (3).pdf",
+            "Nadeeja Perera copy (3).pdf",
+            "Recommendation Letter for Mr.Nadeeja Perera.pdf"
+          ],
+          "context_length": 4224
+        }
+      }
+    ],
+    "created_at": "2025-10-18T14:41:05.878214",
+    "updated_at": "2025-10-18T14:41:20.796621",
+    "document_context": [
+      "Nadeeja Perera copy (3).pdf"
+    ],
+    "summary": null
+  }
+}

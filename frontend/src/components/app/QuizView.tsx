@@ -105,12 +105,36 @@ const QuizView = ({ documents }: QuizViewProps) => {
     setShowAnswer(true);
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     setShowAnswer(false);
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
     } else {
       setQuizCompleted(true);
+      // Track quiz completion analytics
+      await trackQuizCompletion();
+    }
+  };
+
+  const trackQuizCompletion = async () => {
+    try {
+      const response = await fetch("http://localhost:8000/analytics/track-quiz", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: "default",
+          quiz_score: score,
+          total_questions: questions.length,
+          score_percentage: getScorePercentage(),
+          completed_at: new Date().toISOString()
+        })
+      });
+      
+      if (response.ok) {
+        console.log("Quiz completion tracked successfully");
+      }
+    } catch (error) {
+      console.error("Error tracking quiz completion:", error);
     }
   };
 
