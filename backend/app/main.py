@@ -35,9 +35,25 @@ app = FastAPI(
 )
 
 # Configure CORS
+allowed_origins = [
+    "http://localhost:3000", 
+    "http://localhost:5173", 
+    "http://localhost:8080", 
+    "http://localhost:8501", 
+    "http://localhost:8081"
+]
+
+# Add production origins if in production
+if os.getenv("ENVIRONMENT") == "production":
+    allowed_origins.extend([
+        "https://learnmate-frontend.onrender.com",
+        "https://learnmate-ai.onrender.com",
+        # Add your custom domain here
+    ])
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173", "http://localhost:8080", "http://localhost:8501", "http://localhost:8081"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

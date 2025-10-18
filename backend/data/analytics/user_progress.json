@@ -1,0 +1,15 @@
+{
+  "default": {
+    "user_id": "default",
+    "total_sessions": 5,
+    "total_documents_uploaded": 1,
+    "total_questions_asked": 0,
+    "total_summaries_generated": 1,
+    "total_quizzes_taken": 0,
+    "total_chat_messages": 2,
+    "learning_streak_days": 1,
+    "last_activity": "2025-10-18T17:38:41.392654",
+    "preferred_document_types": null,
+    "learning_patterns": null
+  }
+}

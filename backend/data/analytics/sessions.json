@@ -1,0 +1,70 @@
+[
+  {
+    "id": "session_20251018_173810_702250",
+    "user_id": "default",
+    "session_type": "upload",
+    "document_name": "Nadeeja Perera copy (5).pdf",
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T17:38:10.702287",
+    "metadata": {
+      "file_size": 76196,
+      "chunks_count": 5,
+      "file_type": "pdf"
+    }
+  },
+  {
+    "id": "session_20251018_173817_969095",
+    "user_id": "default",
+    "session_type": "chat",
+    "document_name": "Nadeeja Perera copy (5).pdf",
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T17:38:17.969111",
+    "metadata": {
+      "question_length": 33,
+      "answer_length": 116,
+      "sources_count": 5,
+      "conversation_id": "conv_20251018_173814_default"
+    }
+  },
+  {
+    "id": "session_20251018_173824_950405",
+    "user_id": "default",
+    "session_type": "summary",
+    "document_name": "Nadeeja Perera copy (5).pdf",
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T17:38:24.950468",
+    "metadata": {
+      "summary_length": 1800,
+      "document_count": 1,
+      "context_length": 4729
+    }
+  },
+  {
+    "id": "session_20251018_173839_876677",
+    "user_id": "default",
+    "session_type": "chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T17:38:39.876694",
+    "metadata": {
+      "question_length": 32,
+      "answer_length": 46,
+      "sources_count": 5,
+      "conversation_id": "conv_20251018_173837_default"
+    }
+  },
+  {
+    "id": "session_20251018_173841_392587",
+    "user_id": "default",
+    "session_type": "voice_chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T17:38:41.392643",
+    "metadata": {
+      "transcribed_text": "What's the name of the resource?",
+      "response_length": 46,
+      "conversation_id": "conv_20251018_173837_default",
+      "voice_enabled": true
+    }
+  }
+]

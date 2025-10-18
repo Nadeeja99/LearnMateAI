@@ -1,0 +1,78 @@
+{
+  "conv_20251018_173814_default": {
+    "id": "conv_20251018_173814_default",
+    "user_id": "default",
+    "title": "Chat 10/18/2025, 5:38:14 PM",
+    "messages": [
+      {
+        "id": "msg_20251018_173817_967660",
+        "role": "user",
+        "content": "What are the main topics covered?",
+        "timestamp": "2025-10-18T17:38:17.967708",
+        "metadata": {
+          "document_names": [
+            "Nadeeja Perera copy (5).pdf"
+          ]
+        }
+      },
+      {
+        "id": "msg_20251018_173817_968600",
+        "role": "assistant",
+        "content": "The main topics covered are Nadeeja Perera's education, work experience, projects, technical skills, and references.",
+        "timestamp": "2025-10-18T17:38:17.968623",
+        "metadata": {
+          "sources": [
+            "Nadeeja Perera copy (5).pdf",
+            "Nadeeja Perera copy (5).pdf",
+            "Nadeeja Perera copy (5).pdf",
+            "Nadeeja Perera copy (5).pdf",
+            "Nadeeja Perera copy (5).pdf"
+          ],
+          "context_length": 4729
+        }
+      }
+    ],
+    "created_at": "2025-10-18T17:38:14.752432",
+    "updated_at": "2025-10-18T17:38:17.968629",
+    "document_context": [
+      "Nadeeja Perera copy (5).pdf"
+    ],
+    "summary": null
+  },
+  "conv_20251018_173837_default": {
+    "id": "conv_20251018_173837_default",
+    "user_id": "default",
+    "title": "Voice Chat 2025-10-18 17:38",
+    "messages": [
+      {
+        "id": "msg_20251018_173839_874997",
+        "role": "user",
+        "content": "What's the name of the resource?",
+        "timestamp": "2025-10-18T17:38:39.875051",
+        "metadata": {
+          "document_names": null
+        }
+      },
+      {
+        "id": "msg_20251018_173839_876047",
+        "role": "assistant",
+        "content": "SPARK - Resource and Project Management System",
+        "timestamp": "2025-10-18T17:38:39.876074",
+        "metadata": {
+          "sources": [
+            "Nadeeja Perera copy (5).pdf",
+            "Nadeeja Perera copy (5).pdf",
+            "Nadeeja Perera copy (5).pdf",
+            "Nadeeja Perera copy (5).pdf",
+            "Nadeeja Perera copy (5).pdf"
+          ],
+          "context_length": 4729
+        }
+      }
+    ],
+    "created_at": "2025-10-18T17:38:37.979455",
+    "updated_at": "2025-10-18T17:38:39.876078",
+    "document_context": [],
+    "summary": null
+  }
+}

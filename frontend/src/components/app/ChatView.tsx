@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Send, Copy, ThumbsUp, ThumbsDown, Sparkles, Loader2, MessageSquare, Plus, History } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import API_CONFIG from "@/lib/api";
 
 interface Message {
   id: string;
@@ -59,7 +60,7 @@ const ChatView = ({ documents }: ChatViewProps) => {
 
   const loadConversations = async () => {
     try {
-      const response = await fetch("http://localhost:8000/conversations/user/default");
+      const response = await fetch(API_CONFIG.ENDPOINTS.USER_CONVERSATIONS("default"));
       if (response.ok) {
         const data = await response.json();
         setConversations(data.conversations || []);
@@ -71,7 +72,7 @@ const ChatView = ({ documents }: ChatViewProps) => {
 
   const createNewConversation = async (showToast: boolean = true) => {
     try {
-      const response = await fetch("http://localhost:8000/conversations", {
+      const response = await fetch(API_CONFIG.ENDPOINTS.CONVERSATIONS, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -101,7 +102,7 @@ const ChatView = ({ documents }: ChatViewProps) => {
 
   const loadConversation = async (conversationId: string) => {
     try {
-      const response = await fetch(`http://localhost:8000/conversations/${conversationId}/history`);
+      const response = await fetch(API_CONFIG.ENDPOINTS.CONVERSATION_HISTORY(conversationId));
       if (response.ok) {
         const data = await response.json();
         setCurrentConversationId(conversationId);
@@ -148,12 +149,12 @@ const ChatView = ({ documents }: ChatViewProps) => {
 
     try {
       // Get current session documents from backend
-      const sessionResponse = await fetch("http://localhost:8000/current-session-documents");
+      const sessionResponse = await fetch(API_CONFIG.ENDPOINTS.CURRENT_SESSION_DOCUMENTS);
       const sessionData = await sessionResponse.json();
       
       console.log("Current session documents for question:", sessionData.documents);
       
-      const response = await fetch("http://localhost:8000/ask", {
+      const response = await fetch(API_CONFIG.ENDPOINTS.ASK, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
