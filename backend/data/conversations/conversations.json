@@ -754,5 +754,501 @@
     "updated_at": "2025-10-18T15:13:01.290073",
     "document_context": [],
     "summary": null
+  },
+  "conv_20251018_155050_default": {
+    "id": "conv_20251018_155050_default",
+    "user_id": "default",
+    "title": "Voice Chat 2025-10-18 15:50",
+    "messages": [
+      {
+        "id": "msg_20251018_155052_774563",
+        "role": "user",
+        "content": "What is this document about?",
+        "timestamp": "2025-10-18T15:50:52.774604",
+        "metadata": {
+          "document_names": null
+        }
+      },
+      {
+        "id": "msg_20251018_155052_777519",
+        "role": "assistant",
+        "content": "This document is about the professional profile and experience of Nadeeja Perera, a Software Engineer with expertise in full-stack development and project management. It includes details about her education, work experience, skills, projects worked on, and contact information.",
+        "timestamp": "2025-10-18T15:50:52.777540",
+        "metadata": {
+          "sources": [
+            "Nadeeja Perera copy (5) (1).pdf",
+            "Nadeeja Perera copy (5) (1).pdf",
+            "Nadeeja Perera copy (5) (1).pdf",
+            "Nadeeja Perera copy (5) (1).pdf",
+            "Nadeeja Perera copy (5) (1).pdf"
+          ],
+          "context_length": 4747
+        }
+      },
+      {
+        "id": "msg_20251018_155158_243057",
+        "role": "user",
+        "content": "Who are the references?",
+        "timestamp": "2025-10-18T15:51:58.243124",
+        "metadata": {
+          "document_names": null
+        }
+      },
+      {
+        "id": "msg_20251018_155158_244564",
+        "role": "assistant",
+        "content": "The references for Nadeeja Perera are Gayanath Chandrasena and Sherantha Perera.",
+        "timestamp": "2025-10-18T15:51:58.244573",
+        "metadata": {
+          "sources": [
+            "Nadeeja Perera copy (5) (1).pdf",
+            "Nadeeja Perera copy (5) (1).pdf",
+            "Nadeeja Perera copy (5) (1).pdf",
+            "Nadeeja Perera copy (5) (1).pdf",
+            "Nadeeja Perera copy (5) (1).pdf"
+          ],
+          "context_length": 4747
+        }
+      },
+      {
+        "id": "msg_20251018_155224_768000",
+        "role": "user",
+        "content": "Thank you.",
+        "timestamp": "2025-10-18T15:52:24.768037",
+        "metadata": {
+          "document_names": null
+        }
+      },
+      {
+        "id": "msg_20251018_155224_770688",
+        "role": "assistant",
+        "content": "You're welcome.",
+        "timestamp": "2025-10-18T15:52:24.770716",
+        "metadata": {
+          "sources": [
+            "Nadeeja Perera copy (5) (1).pdf",
+            "Nadeeja Perera copy (5) (1).pdf",
+            "Nadeeja Perera copy (5) (1).pdf",
+            "Nadeeja Perera copy (5) (1).pdf",
+            "Nadeeja Perera copy (5) (1).pdf"
+          ],
+          "context_length": 4747
+        }
+      }
+    ],
+    "created_at": "2025-10-18T15:50:50.709127",
+    "updated_at": "2025-10-18T15:52:24.770720",
+    "document_context": [],
+    "summary": null
+  },
+  "conv_20251018_155415_default": {
+    "id": "conv_20251018_155415_default",
+    "user_id": "default",
+    "title": "Voice Chat 2025-10-18 15:54",
+    "messages": [
+      {
+        "id": "msg_20251018_155416_431523",
+        "role": "user",
+        "content": "I want to know about this CV username",
+        "timestamp": "2025-10-18T15:54:16.431583",
+        "metadata": {
+          "document_names": null
+        }
+      },
+      {
+        "id": "msg_20251018_155416_436216",
+        "role": "assistant",
+        "content": "The CV username is Nadeeja Perera.",
+        "timestamp": "2025-10-18T15:54:16.436241",
+        "metadata": {
+          "sources": [
+            "Nadeeja Perera copy (5) (1).pdf",
+            "Nadeeja Perera copy (5) (1).pdf",
+            "Nadeeja Perera copy (5) (1).pdf",
+            "Nadeeja Perera copy (5) (1).pdf",
+            "Nadeeja Perera copy (5) (1).pdf"
+          ],
+          "context_length": 4747
+        }
+      },
+      {
+        "id": "msg_20251018_155440_582585",
+        "role": "user",
+        "content": "Where does he live? Where does he live?",
+        "timestamp": "2025-10-18T15:54:40.582631",
+        "metadata": {
+          "document_names": null
+        }
+      },
+      {
+        "id": "msg_20251018_155440_586409",
+        "role": "assistant",
+        "content": "Nadeeja Perera lives at 40/1, Niyandagala, Pannipitiya, Colombo, Sri Lanka.",
+        "timestamp": "2025-10-18T15:54:40.586436",
+        "metadata": {
+          "sources": [
+            "Nadeeja Perera copy (5) (1).pdf",
+            "Nadeeja Perera copy (5) (1).pdf",
+            "Nadeeja Perera copy (5) (1).pdf",
+            "Nadeeja Perera copy (5) (1).pdf",
+            "Nadeeja Perera copy (5) (1).pdf"
+          ],
+          "context_length": 4747
+        }
+      }
+    ],
+    "created_at": "2025-10-18T15:54:15.154234",
+    "updated_at": "2025-10-18T15:54:40.586440",
+    "document_context": [],
+    "summary": null
+  },
+  "conv_20251018_155733_default": {
+    "id": "conv_20251018_155733_default",
+    "user_id": "default",
+    "title": "Voice Chat 2025-10-18 15:57",
+    "messages": [
+      {
+        "id": "msg_20251018_155734_988191",
+        "role": "user",
+        "content": "I want to know about this CV user's name.",
+        "timestamp": "2025-10-18T15:57:34.988241",
+        "metadata": {
+          "document_names": null
+        }
+      },
+      {
+        "id": "msg_20251018_155734_992123",
+        "role": "assistant",
+        "content": "The CV user's name is Nadeeja Perera.",
+        "timestamp": "2025-10-18T15:57:34.992152",
+        "metadata": {
+          "sources": [
+            "Nadeeja Perera copy (5) (1).pdf",
+            "Nadeeja Perera copy (5) (1).pdf",
+            "Nadeeja Perera copy (5) (1).pdf",
+            "Nadeeja Perera copy (5) (1).pdf",
+            "Nadeeja Perera copy (5) (1).pdf"
+          ],
+          "context_length": 4747
+        }
+      }
+    ],
+    "created_at": "2025-10-18T15:57:33.745061",
+    "updated_at": "2025-10-18T15:57:34.992157",
+    "document_context": [],
+    "summary": null
+  },
+  "conv_20251018_160504_default": {
+    "id": "conv_20251018_160504_default",
+    "user_id": "default",
+    "title": "Voice Chat 2025-10-18 16:05",
+    "messages": [],
+    "created_at": "2025-10-18T16:05:04.214138",
+    "updated_at": "2025-10-18T16:05:04.214139",
+    "document_context": [],
+    "summary": null
+  },
+  "conv_20251018_160522_default": {
+    "id": "conv_20251018_160522_default",
+    "user_id": "default",
+    "title": "Voice Chat 2025-10-18 16:05",
+    "messages": [],
+    "created_at": "2025-10-18T16:05:22.362987",
+    "updated_at": "2025-10-18T16:05:22.362988",
+    "document_context": [],
+    "summary": null
+  },
+  "conv_20251018_161101_default": {
+    "id": "conv_20251018_161101_default",
+    "user_id": "default",
+    "title": "Voice Chat 2025-10-18 16:11",
+    "messages": [
+      {
+        "id": "msg_20251018_161102_899305",
+        "role": "user",
+        "content": "Who sent this letter?",
+        "timestamp": "2025-10-18T16:11:02.899347",
+        "metadata": {
+          "document_names": null
+        }
+      },
+      {
+        "id": "msg_20251018_161102_902642",
+        "role": "assistant",
+        "content": "The letter was sent by Jennie David, Associate Vice President - Global HR Operations & Total Rewards.",
+        "timestamp": "2025-10-18T16:11:02.902666",
+        "metadata": {
+          "sources": [
+            "Keele University - Confirmation of Employment - Nadeeja Perera.pdf",
+            "Keele University - Confirmation of Employment - Nadeeja Perera.pdf",
+            "Keele University - Confirmation of Employment - Nadeeja Perera.pdf",
+            "Keele University - Confirmation of Employment - Nadeeja Perera.pdf"
+          ],
+          "context_length": 3450
+        }
+      }
+    ],
+    "created_at": "2025-10-18T16:11:01.063264",
+    "updated_at": "2025-10-18T16:11:02.902670",
+    "document_context": [],
+    "summary": null
+  },
+  "conv_20251018_161808_default": {
+    "id": "conv_20251018_161808_default",
+    "user_id": "default",
+    "title": "Voice Chat 2025-10-18 16:18",
+    "messages": [
+      {
+        "id": "msg_20251018_161809_583016",
+        "role": "user",
+        "content": "What's the name of the candidate?",
+        "timestamp": "2025-10-18T16:18:09.583060",
+        "metadata": {
+          "document_names": null
+        }
+      },
+      {
+        "id": "msg_20251018_161809_586373",
+        "role": "assistant",
+        "content": "Nadeeja Perera",
+        "timestamp": "2025-10-18T16:18:09.586407",
+        "metadata": {
+          "sources": [
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf"
+          ],
+          "context_length": 4728
+        }
+      },
+      {
+        "id": "msg_20251018_161823_298443",
+        "role": "user",
+        "content": "Which country does he live in?",
+        "timestamp": "2025-10-18T16:18:23.298504",
+        "metadata": {
+          "document_names": null
+        }
+      },
+      {
+        "id": "msg_20251018_161823_302372",
+        "role": "assistant",
+        "content": "Sri Lanka",
+        "timestamp": "2025-10-18T16:18:23.302401",
+        "metadata": {
+          "sources": [
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf"
+          ],
+          "context_length": 4728
+        }
+      },
+      {
+        "id": "msg_20251018_161832_537757",
+        "role": "user",
+        "content": "Thank you very much.",
+        "timestamp": "2025-10-18T16:18:32.537814",
+        "metadata": {
+          "document_names": null
+        }
+      },
+      {
+        "id": "msg_20251018_161832_541711",
+        "role": "assistant",
+        "content": "You're welcome.",
+        "timestamp": "2025-10-18T16:18:32.541741",
+        "metadata": {
+          "sources": [
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf"
+          ],
+          "context_length": 4728
+        }
+      }
+    ],
+    "created_at": "2025-10-18T16:18:08.576250",
+    "updated_at": "2025-10-18T16:18:32.541745",
+    "document_context": [],
+    "summary": null
+  },
+  "conv_20251018_161929_default": {
+    "id": "conv_20251018_161929_default",
+    "user_id": "default",
+    "title": "Voice Chat 2025-10-18 16:19",
+    "messages": [
+      {
+        "id": "msg_20251018_161931_129334",
+        "role": "user",
+        "content": "Who is the reference for this candidate?",
+        "timestamp": "2025-10-18T16:19:31.129394",
+        "metadata": {
+          "document_names": null
+        }
+      },
+      {
+        "id": "msg_20251018_161931_133319",
+        "role": "assistant",
+        "content": "Gayanath Chandrasena",
+        "timestamp": "2025-10-18T16:19:31.133345",
+        "metadata": {
+          "sources": [
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf"
+          ],
+          "context_length": 4728
+        }
+      },
+      {
+        "id": "msg_20251018_161946_364634",
+        "role": "user",
+        "content": "What are the texts that he used?",
+        "timestamp": "2025-10-18T16:19:46.364683",
+        "metadata": {
+          "document_names": null
+        }
+      },
+      {
+        "id": "msg_20251018_161946_368954",
+        "role": "assistant",
+        "content": "Python, React.js, Node.js, MongoDB, Machine Learning",
+        "timestamp": "2025-10-18T16:19:46.368982",
+        "metadata": {
+          "sources": [
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf"
+          ],
+          "context_length": 4728
+        }
+      }
+    ],
+    "created_at": "2025-10-18T16:19:29.827322",
+    "updated_at": "2025-10-18T16:19:46.368986",
+    "document_context": [],
+    "summary": null
+  },
+  "conv_20251018_162131_default": {
+    "id": "conv_20251018_162131_default",
+    "user_id": "default",
+    "title": "Voice Chat 2025-10-18 16:21",
+    "messages": [
+      {
+        "id": "msg_20251018_162132_955893",
+        "role": "user",
+        "content": "What's the Sri Lankan company does he work for?",
+        "timestamp": "2025-10-18T16:21:32.955949",
+        "metadata": {
+          "document_names": null
+        }
+      },
+      {
+        "id": "msg_20251018_162132_960168",
+        "role": "assistant",
+        "content": "Fortude (Private) Limited",
+        "timestamp": "2025-10-18T16:21:32.960195",
+        "metadata": {
+          "sources": [
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf"
+          ],
+          "context_length": 4728
+        }
+      },
+      {
+        "id": "msg_20251018_162149_557902",
+        "role": "user",
+        "content": "Let me know about the 48 private limited.",
+        "timestamp": "2025-10-18T16:21:49.557950",
+        "metadata": {
+          "document_names": null
+        }
+      },
+      {
+        "id": "msg_20251018_162149_562258",
+        "role": "assistant",
+        "content": "I don't know.",
+        "timestamp": "2025-10-18T16:21:49.562286",
+        "metadata": {
+          "sources": [
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf"
+          ],
+          "context_length": 4728
+        }
+      },
+      {
+        "id": "msg_20251018_162159_721788",
+        "role": "user",
+        "content": "No, I just want to know about Fortuit Private Limited.",
+        "timestamp": "2025-10-18T16:21:59.721838",
+        "metadata": {
+          "document_names": null
+        }
+      },
+      {
+        "id": "msg_20251018_162159_726089",
+        "role": "assistant",
+        "content": "Fortude (Private) Limited is a company where Nadeeja Perera works as a Software Engineer.",
+        "timestamp": "2025-10-18T16:21:59.726116",
+        "metadata": {
+          "sources": [
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf"
+          ],
+          "context_length": 4728
+        }
+      },
+      {
+        "id": "msg_20251018_162216_894136",
+        "role": "user",
+        "content": "can't you search web",
+        "timestamp": "2025-10-18T16:22:16.894185",
+        "metadata": {
+          "document_names": null
+        }
+      },
+      {
+        "id": "msg_20251018_162216_898751",
+        "role": "assistant",
+        "content": "I don't know.",
+        "timestamp": "2025-10-18T16:22:16.898777",
+        "metadata": {
+          "sources": [
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf",
+            "Nadeeja Perera copy (4).pdf"
+          ],
+          "context_length": 4728
+        }
+      }
+    ],
+    "created_at": "2025-10-18T16:21:31.698536",
+    "updated_at": "2025-10-18T16:22:16.898781",
+    "document_context": [],
+    "summary": null
   }
 }

@@ -121,6 +121,21 @@ const VoiceChat = ({ documents }: VoiceChatProps) => {
   };
 
   const handleVoiceMessage = (message: any) => {
+    
+    if (message.type === "transcribed") {
+      // Update the last user message with the actual transcribed text
+      setMessages(prev => {
+        const updated = prev.map((msg, index) => {
+          if (index === prev.length - 1 && (msg.text === "🎤 Listening..." || msg.text === "🎤 Processing...") && msg.type === "user") {
+            return { ...msg, text: message.text };
+          }
+          return msg;
+        });
+        return updated;
+      });
+      return;
+    }
+    
     const voiceMessage: VoiceMessage = {
       id: `msg_${Date.now()}`,
       type: message.type === "welcome" || message.type === "response" ? "assistant" : "system",
@@ -136,6 +151,7 @@ const VoiceChat = ({ documents }: VoiceChatProps) => {
       playAudio(message.audio);
     }
   };
+
 
   const startListening = async () => {
     if (!isConnected) {
@@ -198,10 +214,10 @@ const VoiceChat = ({ documents }: VoiceChatProps) => {
       mediaRecorderRef.current.stop();
       setIsListening(false);
       
-      // Update user message
+      // Update the last user message that's currently listening
       setMessages(prev => 
-        prev.map(msg => 
-          msg.id === `user_${Date.now()}` && msg.text === "🎤 Listening..."
+        prev.map((msg, index) => 
+          index === prev.length - 1 && msg.text === "🎤 Listening..." && msg.type === "user"
             ? { ...msg, text: "🎤 Processing..." }
             : msg
         )
@@ -227,6 +243,7 @@ const VoiceChat = ({ documents }: VoiceChatProps) => {
       console.error("Error sending audio:", error);
     }
   };
+
 
   const playAudio = async (base64Audio: string) => {
     try {
@@ -283,36 +300,6 @@ const VoiceChat = ({ documents }: VoiceChatProps) => {
     }
   };
 
-  const sendTextMessage = async (text: string) => {
-    if (!isConnected || !websocketRef.current) {
-      toast({
-        title: "Not Connected",
-        description: "Please connect to voice agent first",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    try {
-      websocketRef.current.send(JSON.stringify({
-        type: "text",
-        text: text,
-        timestamp: new Date().toISOString()
-      }));
-      
-      // Add user message
-      const userMessage: VoiceMessage = {
-        id: `user_${Date.now()}`,
-        type: "user",
-        text: text,
-        timestamp: new Date().toISOString(),
-      };
-      setMessages(prev => [...prev, userMessage]);
-      
-    } catch (error) {
-      console.error("Error sending text message:", error);
-    }
-  };
 
   return (
     <div className="flex flex-col h-[calc(100vh-12rem)]">
@@ -471,23 +458,28 @@ const VoiceChat = ({ documents }: VoiceChatProps) => {
 
       {/* Quick Actions */}
       {isConnected && (
-        <div className="flex gap-2 justify-center">
-          {[
-            "What are the main topics?",
-            "Explain this concept",
-            "Give me a summary",
-            "Create a quiz"
-          ].map((text) => (
-            <Button
-              key={text}
-              variant="outline"
-              size="sm"
-              onClick={() => sendTextMessage(text)}
-              disabled={isListening || isSpeaking}
-            >
-              {text}
-            </Button>
-          ))}
+        <div className="flex gap-2 justify-center flex-wrap">
+          <p className="text-sm text-muted-foreground w-full text-center mb-2">
+            💡 Click "Start Speaking" and say these questions:
+          </p>
+          <div className="flex gap-2 flex-wrap justify-center">
+            {[
+              "What are the main topics?",
+              "Explain this concept",
+              "Give me a summary",
+              "Create a quiz"
+            ].map((text) => (
+              <Button
+                key={text}
+                variant="outline"
+                size="sm"
+                disabled
+                className="opacity-60"
+              >
+                {text}
+              </Button>
+            ))}
+          </div>
         </div>
       )}
     </div>

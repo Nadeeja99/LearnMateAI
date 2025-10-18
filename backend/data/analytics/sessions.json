@@ -660,5 +660,587 @@
       "conversation_id": "conv_20251018_151156_default",
       "voice_enabled": true
     }
+  },
+  {
+    "id": "session_20251018_151652_817955",
+    "user_id": "default",
+    "session_type": "chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T15:16:52.817976",
+    "metadata": {
+      "question_length": 44,
+      "answer_length": 80,
+      "sources_count": 5,
+      "conversation_id": "conv_20251018_151651_default"
+    }
+  },
+  {
+    "id": "session_20251018_151654_426992",
+    "user_id": "default",
+    "session_type": "voice_chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T15:16:54.427039",
+    "metadata": {
+      "transcribed_text": "Can you tell me the reference about this CV?",
+      "response_length": 80,
+      "conversation_id": "conv_20251018_151651_default",
+      "voice_enabled": true
+    }
+  },
+  {
+    "id": "session_20251018_154738_627916",
+    "user_id": "default",
+    "session_type": "upload",
+    "document_name": "Nadeeja Perera copy (5) (1).pdf",
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T15:47:38.627954",
+    "metadata": {
+      "file_size": 48860,
+      "chunks_count": 5,
+      "file_type": "pdf"
+    }
+  },
+  {
+    "id": "session_20251018_154745_344167",
+    "user_id": "default",
+    "session_type": "upload",
+    "document_name": "Nadeeja Perera copy (5) (1).pdf",
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T15:47:45.344195",
+    "metadata": {
+      "file_size": 48860,
+      "chunks_count": 5,
+      "file_type": "pdf"
+    }
+  },
+  {
+    "id": "session_20251018_154833_126150",
+    "user_id": "default",
+    "session_type": "upload",
+    "document_name": "Nadeeja Perera copy (5) (1).pdf",
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T15:48:33.126187",
+    "metadata": {
+      "file_size": 48860,
+      "chunks_count": 5,
+      "file_type": "pdf"
+    }
+  },
+  {
+    "id": "session_20251018_154927_366262",
+    "user_id": "default",
+    "session_type": "upload",
+    "document_name": "Nadeeja Perera copy (5) (1).pdf",
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T15:49:27.366297",
+    "metadata": {
+      "file_size": 48860,
+      "chunks_count": 5,
+      "file_type": "pdf"
+    }
+  },
+  {
+    "id": "session_20251018_155052_779647",
+    "user_id": "default",
+    "session_type": "chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T15:50:52.779675",
+    "metadata": {
+      "question_length": 28,
+      "answer_length": 277,
+      "sources_count": 5,
+      "conversation_id": "conv_20251018_155050_default"
+    }
+  },
+  {
+    "id": "session_20251018_155055_860221",
+    "user_id": "default",
+    "session_type": "voice_chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T15:50:55.860251",
+    "metadata": {
+      "transcribed_text": "What is this document about?",
+      "response_length": 277,
+      "conversation_id": "conv_20251018_155050_default",
+      "voice_enabled": true
+    }
+  },
+  {
+    "id": "session_20251018_155158_246055",
+    "user_id": "default",
+    "session_type": "chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T15:51:58.246072",
+    "metadata": {
+      "question_length": 23,
+      "answer_length": 80,
+      "sources_count": 5,
+      "conversation_id": "conv_20251018_155050_default"
+    }
+  },
+  {
+    "id": "session_20251018_155200_237797",
+    "user_id": "default",
+    "session_type": "voice_chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T15:52:00.237845",
+    "metadata": {
+      "transcribed_text": "Who are the references?",
+      "response_length": 80,
+      "conversation_id": "conv_20251018_155050_default",
+      "voice_enabled": true
+    }
+  },
+  {
+    "id": "session_20251018_155224_773385",
+    "user_id": "default",
+    "session_type": "chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T15:52:24.773410",
+    "metadata": {
+      "question_length": 10,
+      "answer_length": 15,
+      "sources_count": 5,
+      "conversation_id": "conv_20251018_155050_default"
+    }
+  },
+  {
+    "id": "session_20251018_155226_153739",
+    "user_id": "default",
+    "session_type": "voice_chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T15:52:26.153798",
+    "metadata": {
+      "transcribed_text": "Thank you.",
+      "response_length": 15,
+      "conversation_id": "conv_20251018_155050_default",
+      "voice_enabled": true
+    }
+  },
+  {
+    "id": "session_20251018_155416_438771",
+    "user_id": "default",
+    "session_type": "chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T15:54:16.438789",
+    "metadata": {
+      "question_length": 37,
+      "answer_length": 34,
+      "sources_count": 5,
+      "conversation_id": "conv_20251018_155415_default"
+    }
+  },
+  {
+    "id": "session_20251018_155418_077277",
+    "user_id": "default",
+    "session_type": "voice_chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T15:54:18.077321",
+    "metadata": {
+      "transcribed_text": "I want to know about this CV username",
+      "response_length": 34,
+      "conversation_id": "conv_20251018_155415_default",
+      "voice_enabled": true
+    }
+  },
+  {
+    "id": "session_20251018_155440_589045",
+    "user_id": "default",
+    "session_type": "chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T15:54:40.589066",
+    "metadata": {
+      "question_length": 39,
+      "answer_length": 75,
+      "sources_count": 5,
+      "conversation_id": "conv_20251018_155415_default"
+    }
+  },
+  {
+    "id": "session_20251018_155443_144603",
+    "user_id": "default",
+    "session_type": "voice_chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T15:54:43.144655",
+    "metadata": {
+      "transcribed_text": "Where does he live? Where does he live?",
+      "response_length": 75,
+      "conversation_id": "conv_20251018_155415_default",
+      "voice_enabled": true
+    }
+  },
+  {
+    "id": "session_20251018_155734_994922",
+    "user_id": "default",
+    "session_type": "chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T15:57:34.994942",
+    "metadata": {
+      "question_length": 41,
+      "answer_length": 37,
+      "sources_count": 5,
+      "conversation_id": "conv_20251018_155733_default"
+    }
+  },
+  {
+    "id": "session_20251018_155736_870803",
+    "user_id": "default",
+    "session_type": "voice_chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T15:57:36.870857",
+    "metadata": {
+      "transcribed_text": "I want to know about this CV user's name.",
+      "response_length": 37,
+      "conversation_id": "conv_20251018_155733_default",
+      "voice_enabled": true
+    }
+  },
+  {
+    "id": "session_20251018_160506_188259",
+    "user_id": "default",
+    "session_type": "voice_chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T16:05:06.188301",
+    "metadata": {
+      "transcribed_text": "I want to know about the reference of this document.",
+      "response_length": 72,
+      "conversation_id": "conv_20251018_160504_default",
+      "voice_enabled": true
+    }
+  },
+  {
+    "id": "session_20251018_160524_403764",
+    "user_id": "default",
+    "session_type": "voice_chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T16:05:24.403806",
+    "metadata": {
+      "transcribed_text": "I need to know about the reference of this cv.",
+      "response_length": 72,
+      "conversation_id": "conv_20251018_160522_default",
+      "voice_enabled": true
+    }
+  },
+  {
+    "id": "session_20251018_161043_240720",
+    "user_id": "default",
+    "session_type": "upload",
+    "document_name": "Keele University - Confirmation of Employment - Nadeeja Perera.pdf",
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T16:10:43.240768",
+    "metadata": {
+      "file_size": 236604,
+      "chunks_count": 4,
+      "file_type": "pdf"
+    }
+  },
+  {
+    "id": "session_20251018_161102_905165",
+    "user_id": "default",
+    "session_type": "chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T16:11:02.905182",
+    "metadata": {
+      "question_length": 21,
+      "answer_length": 101,
+      "sources_count": 4,
+      "conversation_id": "conv_20251018_161101_default"
+    }
+  },
+  {
+    "id": "session_20251018_161107_038516",
+    "user_id": "default",
+    "session_type": "voice_chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T16:11:07.038547",
+    "metadata": {
+      "transcribed_text": "Who sent this letter?",
+      "response_length": 101,
+      "conversation_id": "conv_20251018_161101_default",
+      "voice_enabled": true
+    }
+  },
+  {
+    "id": "session_20251018_161758_179981",
+    "user_id": "default",
+    "session_type": "upload",
+    "document_name": "Nadeeja Perera copy (4).pdf",
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T16:17:58.180028",
+    "metadata": {
+      "file_size": 76051,
+      "chunks_count": 5,
+      "file_type": "pdf"
+    }
+  },
+  {
+    "id": "session_20251018_161809_588815",
+    "user_id": "default",
+    "session_type": "chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T16:18:09.588827",
+    "metadata": {
+      "question_length": 33,
+      "answer_length": 14,
+      "sources_count": 5,
+      "conversation_id": "conv_20251018_161808_default"
+    }
+  },
+  {
+    "id": "session_20251018_161810_659591",
+    "user_id": "default",
+    "session_type": "voice_chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T16:18:10.659645",
+    "metadata": {
+      "transcribed_text": "What's the name of the candidate?",
+      "response_length": 14,
+      "conversation_id": "conv_20251018_161808_default",
+      "voice_enabled": true
+    }
+  },
+  {
+    "id": "session_20251018_161823_305472",
+    "user_id": "default",
+    "session_type": "chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T16:18:23.305495",
+    "metadata": {
+      "question_length": 30,
+      "answer_length": 9,
+      "sources_count": 5,
+      "conversation_id": "conv_20251018_161808_default"
+    }
+  },
+  {
+    "id": "session_20251018_161825_176920",
+    "user_id": "default",
+    "session_type": "voice_chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T16:18:25.176945",
+    "metadata": {
+      "transcribed_text": "Which country does he live in?",
+      "response_length": 9,
+      "conversation_id": "conv_20251018_161808_default",
+      "voice_enabled": true
+    }
+  },
+  {
+    "id": "session_20251018_161832_544922",
+    "user_id": "default",
+    "session_type": "chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T16:18:32.544943",
+    "metadata": {
+      "question_length": 20,
+      "answer_length": 15,
+      "sources_count": 5,
+      "conversation_id": "conv_20251018_161808_default"
+    }
+  },
+  {
+    "id": "session_20251018_161833_660995",
+    "user_id": "default",
+    "session_type": "voice_chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T16:18:33.661037",
+    "metadata": {
+      "transcribed_text": "Thank you very much.",
+      "response_length": 15,
+      "conversation_id": "conv_20251018_161808_default",
+      "voice_enabled": true
+    }
+  },
+  {
+    "id": "session_20251018_161931_136251",
+    "user_id": "default",
+    "session_type": "chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T16:19:31.136282",
+    "metadata": {
+      "question_length": 40,
+      "answer_length": 20,
+      "sources_count": 5,
+      "conversation_id": "conv_20251018_161929_default"
+    }
+  },
+  {
+    "id": "session_20251018_161933_159924",
+    "user_id": "default",
+    "session_type": "voice_chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T16:19:33.159971",
+    "metadata": {
+      "transcribed_text": "Who is the reference for this candidate?",
+      "response_length": 20,
+      "conversation_id": "conv_20251018_161929_default",
+      "voice_enabled": true
+    }
+  },
+  {
+    "id": "session_20251018_161946_372187",
+    "user_id": "default",
+    "session_type": "chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T16:19:46.372204",
+    "metadata": {
+      "question_length": 32,
+      "answer_length": 52,
+      "sources_count": 5,
+      "conversation_id": "conv_20251018_161929_default"
+    }
+  },
+  {
+    "id": "session_20251018_161948_442701",
+    "user_id": "default",
+    "session_type": "voice_chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T16:19:48.442734",
+    "metadata": {
+      "transcribed_text": "What are the texts that he used?",
+      "response_length": 52,
+      "conversation_id": "conv_20251018_161929_default",
+      "voice_enabled": true
+    }
+  },
+  {
+    "id": "session_20251018_162132_963545",
+    "user_id": "default",
+    "session_type": "chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T16:21:32.963562",
+    "metadata": {
+      "question_length": 47,
+      "answer_length": 25,
+      "sources_count": 5,
+      "conversation_id": "conv_20251018_162131_default"
+    }
+  },
+  {
+    "id": "session_20251018_162135_402765",
+    "user_id": "default",
+    "session_type": "voice_chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T16:21:35.402811",
+    "metadata": {
+      "transcribed_text": "What's the Sri Lankan company does he work for?",
+      "response_length": 25,
+      "conversation_id": "conv_20251018_162131_default",
+      "voice_enabled": true
+    }
+  },
+  {
+    "id": "session_20251018_162149_565576",
+    "user_id": "default",
+    "session_type": "chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T16:21:49.565592",
+    "metadata": {
+      "question_length": 41,
+      "answer_length": 13,
+      "sources_count": 5,
+      "conversation_id": "conv_20251018_162131_default"
+    }
+  },
+  {
+    "id": "session_20251018_162150_785049",
+    "user_id": "default",
+    "session_type": "voice_chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T16:21:50.785115",
+    "metadata": {
+      "transcribed_text": "Let me know about the 48 private limited.",
+      "response_length": 13,
+      "conversation_id": "conv_20251018_162131_default",
+      "voice_enabled": true
+    }
+  },
+  {
+    "id": "session_20251018_162159_729489",
+    "user_id": "default",
+    "session_type": "chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T16:21:59.729507",
+    "metadata": {
+      "question_length": 54,
+      "answer_length": 89,
+      "sources_count": 5,
+      "conversation_id": "conv_20251018_162131_default"
+    }
+  },
+  {
+    "id": "session_20251018_162202_096161",
+    "user_id": "default",
+    "session_type": "voice_chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T16:22:02.096219",
+    "metadata": {
+      "transcribed_text": "No, I just want to know about Fortuit Private Limited.",
+      "response_length": 89,
+      "conversation_id": "conv_20251018_162131_default",
+      "voice_enabled": true
+    }
+  },
+  {
+    "id": "session_20251018_162216_902320",
+    "user_id": "default",
+    "session_type": "chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T16:22:16.902340",
+    "metadata": {
+      "question_length": 20,
+      "answer_length": 13,
+      "sources_count": 5,
+      "conversation_id": "conv_20251018_162131_default"
+    }
+  },
+  {
+    "id": "session_20251018_162218_321985",
+    "user_id": "default",
+    "session_type": "voice_chat",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2025-10-18T16:22:18.322032",
+    "metadata": {
+      "transcribed_text": "can't you search web",
+      "response_length": 13,
+      "conversation_id": "conv_20251018_162131_default",
+      "voice_enabled": true
+    }
   }
 ]

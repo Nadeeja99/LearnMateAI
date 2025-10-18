@@ -65,16 +65,25 @@ class VoiceAgent:
                 logger.warning(f"No active connection for client: {client_id}")
                 return
             
-            # Convert base64 audio to text (placeholder - you'll need actual STT service)
+            logger.info(f"Processing voice message for client: {client_id}")
+            
+            # Convert base64 audio to text using OpenAI Whisper
             transcribed_text = await self.speech_to_text(audio_data)
             
+            logger.info(f"Transcribed text: '{transcribed_text}'")
+            
             if not transcribed_text:
+                logger.warning("No transcribed text received")
                 await self.send_voice_response(
                     client_id, 
                     "I'm sorry, I couldn't understand what you said. Could you please try again?",
                     "error"
                 )
                 return
+            
+            # Send transcribed text to frontend first
+            logger.info(f"Sending transcribed text to frontend: '{transcribed_text}'")
+            await self.send_transcribed_text(client_id, transcribed_text)
             
             # Update conversation context
             context = self.conversation_contexts.get(client_id, {})
@@ -184,6 +193,27 @@ class VoiceAgent:
                 "conversation_id": conversation_id
             }
     
+    async def send_transcribed_text(self, client_id: str, transcribed_text: str):
+        """Send transcribed text to frontend to show what user said"""
+        try:
+            if client_id not in self.active_connections:
+                return
+            
+            websocket = self.active_connections[client_id]
+            
+            # Send transcribed text
+            response = {
+                "type": "transcribed",
+                "text": transcribed_text,
+                "timestamp": datetime.now().isoformat()
+            }
+            
+            await websocket.send_text(json.dumps(response))
+            logger.info(f"Sent transcribed text to {client_id}: {transcribed_text[:50]}...")
+            
+        except Exception as e:
+            logger.error(f"Error sending transcribed text: {e}")
+
     async def send_voice_response(self, client_id: str, text: str, message_type: str = "response"):
         """Send voice response to client"""
         try:
