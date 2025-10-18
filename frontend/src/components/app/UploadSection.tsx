@@ -25,38 +25,18 @@ const UploadSection = ({ onUploadSuccess }: UploadSectionProps) => {
     setIsDragging(false);
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    
-    const files = Array.from(e.dataTransfer.files);
-    const pdfFile = files.find(f => f.type === "application/pdf");
-    
-    if (pdfFile) {
-      handleUpload(pdfFile);
-    } else {
-      toast({
-        title: "Invalid file type",
-        description: "Please upload a PDF file",
-        variant: "destructive",
-      });
-    }
-  }, []);
-
-  const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file && file.type === "application/pdf") {
-      handleUpload(file);
-    } else {
-      toast({
-        title: "Invalid file type",
-        description: "Please upload a PDF file",
-        variant: "destructive",
-      });
-    }
-  }, []);
-
   const handleUpload = async (file: File) => {
+    // Validate file size (20MB limit)
+    const maxSize = 20 * 1024 * 1024; // 20MB in bytes
+    if (file.size > maxSize) {
+      toast({
+        title: "File too large",
+        description: "Please upload a file smaller than 20MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsUploading(true);
     setUploadProgress(0);
 
@@ -94,13 +74,15 @@ const UploadSection = ({ onUploadSuccess }: UploadSectionProps) => {
         
         onUploadSuccess(file.name);
       } else {
-        throw new Error("Upload failed");
+        const errorText = await response.text();
+        throw new Error(`Upload failed: ${response.status} ${errorText}`);
       }
     } catch (error) {
       clearInterval(progressInterval);
+      console.error("Upload error:", error);
       toast({
         title: "Upload failed",
-        description: "Failed to upload document. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to upload document. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -110,6 +92,37 @@ const UploadSection = ({ onUploadSuccess }: UploadSectionProps) => {
       }, 1000);
     }
   };
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    
+    const files = Array.from(e.dataTransfer.files);
+    const pdfFile = files.find(f => f.type === "application/pdf");
+    
+    if (pdfFile) {
+      handleUpload(pdfFile);
+    } else {
+      toast({
+        title: "Invalid file type",
+        description: "Please upload a PDF file",
+        variant: "destructive",
+      });
+    }
+  }, [toast, handleUpload]);
+
+  const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && file.type === "application/pdf") {
+      handleUpload(file);
+    } else {
+      toast({
+        title: "Invalid file type",
+        description: "Please upload a PDF file",
+        variant: "destructive",
+      });
+    }
+  }, [toast, handleUpload]);
 
   return (
     <Card className="p-6 border-dashed border-2 border-border hover:border-primary/50 transition-colors">
