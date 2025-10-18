@@ -1,306 +1,200 @@
-"""
-Vector store management for LearnMate AI Backend
-Handles FAISS vector database operations for document embeddings
-"""
-
+import logging
 import os
 import pickle
-import logging
-from typing import List, Dict, Any, Optional, Tuple
-import numpy as np
 import faiss
-from langchain.embeddings import OpenAIEmbeddings
-from langchain.schema import Document
-
-from .config import settings
-from .models import DocumentChunk, VectorSearchResult, DocumentInfo
+import numpy as np
+from typing import List, Dict, Any, Optional
+from langchain_core.documents import Document
+from langchain_openai import OpenAIEmbeddings
+from langchain_community.vectorstores import FAISS
 
 logger = logging.getLogger(__name__)
 
-class VectorStoreManager:
-    """Manages FAISS vector store for document embeddings"""
+class VectorStore:
+    """Handle vector storage and retrieval using FAISS"""
     
-    def __init__(self):
-        self.embeddings = OpenAIEmbeddings(
-            openai_api_key=settings.openai_api_key,
-            model=settings.embedding_model
-        )
-        self.index = None
-        self.documents = {}  # filename -> document info
-        self.chunk_metadata = []  # metadata for each vector
-        self.dimension = 1536  # OpenAI ada-002 embedding dimension
+    def __init__(self, openai_api_key: str):
+        self.embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
+        self.vector_store: Optional[FAISS] = None
+        self.documents: List[Document] = []
+        self.store_path = "data/vectorstore"
+        self.metadata_path = "data/vectorstore_metadata.pkl"
         
-    async def load_index(self):
-        """Load existing FAISS index from disk"""
-        try:
-            index_path = os.path.join(settings.vector_db_dir, "faiss_index.bin")
-            metadata_path = os.path.join(settings.vector_db_dir, "metadata.pkl")
-            
-            if os.path.exists(index_path) and os.path.exists(metadata_path):
-                # Load FAISS index
-                self.index = faiss.read_index(index_path)
-                
-                # Load metadata
-                with open(metadata_path, 'rb') as f:
-                    data = pickle.load(f)
-                    self.documents = data.get('documents', {})
-                    self.chunk_metadata = data.get('chunk_metadata', [])
-                
-                logger.info(f"Loaded vector store with {self.index.ntotal} vectors")
-            else:
-                # Create new index
-                self.index = faiss.IndexFlatIP(self.dimension)  # Inner product for cosine similarity
-                logger.info("Created new vector store")
-                
-        except Exception as e:
-            logger.error(f"Error loading vector store: {e}")
-            # Create new index on error
-            self.index = faiss.IndexFlatIP(self.dimension)
-    
-    async def save_index(self):
-        """Save FAISS index to disk"""
-        try:
-            os.makedirs(settings.vector_db_dir, exist_ok=True)
-            
-            index_path = os.path.join(settings.vector_db_dir, "faiss_index.bin")
-            metadata_path = os.path.join(settings.vector_db_dir, "metadata.pkl")
-            
-            # Save FAISS index
-            faiss.write_index(self.index, index_path)
-            
-            # Save metadata
-            data = {
-                'documents': self.documents,
-                'chunk_metadata': self.chunk_metadata
-            }
-            with open(metadata_path, 'wb') as f:
-                pickle.dump(data, f)
-            
-            logger.info(f"Saved vector store with {self.index.ntotal} vectors")
-            
-        except Exception as e:
-            logger.error(f"Error saving vector store: {e}")
-    
-    async def add_document(self, document_details: Any, chunks: List[DocumentChunk]):
-        """
-        Add document chunks to vector store
+        # Create directory if it doesn't exist
+        os.makedirs(self.store_path, exist_ok=True)
         
-        Args:
-            document_details: Document processing details
-            chunks: List of document chunks
-        """
+        # Try to load existing vector store
+        self.load_vector_store()
+    
+    def add_documents(self, documents: List[Document]) -> None:
+        """Add documents to the vector store"""
         try:
-            if not chunks:
-                logger.warning("No chunks to add")
+            if not documents:
+                logger.warning("No documents to add")
                 return
             
-            # Generate embeddings for chunks
-            texts = [chunk.content for chunk in chunks]
-            embeddings = await self.embeddings.aembed_documents(texts)
+            logger.info(f"Adding {len(documents)} documents to vector store")
             
-            # Convert to numpy array
-            embeddings_array = np.array(embeddings).astype('float32')
+            if self.vector_store is None:
+                # Create new vector store
+                self.vector_store = FAISS.from_documents(
+                    documents, 
+                    self.embeddings
+                )
+                logger.info("Created new vector store")
+            else:
+                # Add to existing vector store
+                new_store = FAISS.from_documents(documents, self.embeddings)
+                self.vector_store.merge_from(new_store)
+                logger.info("Merged documents into existing vector store")
             
-            # Normalize for cosine similarity
-            faiss.normalize_L2(embeddings_array)
+            # Update documents list
+            self.documents.extend(documents)
             
-            # Add to FAISS index
-            self.index.add(embeddings_array)
-            
-            # Store metadata
-            for i, chunk in enumerate(chunks):
-                metadata = {
-                    'filename': document_details.file_name,
-                    'chunk_index': chunk.chunk_index,
-                    'page_number': chunk.page_number,
-                    'upload_date': datetime.now().isoformat(),
-                    **chunk.metadata
-                }
-                self.chunk_metadata.append(metadata)
-            
-            # Update document info
-            self.documents[document_details.file_name] = {
-                'filename': document_details.file_name,
-                'upload_date': datetime.now().isoformat(),
-                'file_size': document_details.file_size,
-                'pages': document_details.pages,
-                'chunks': document_details.chunks
-            }
-            
-            logger.info(f"Added {len(chunks)} chunks for document {document_details.file_name}")
+            # Save vector store
+            self.save_vector_store()
             
         except Exception as e:
-            logger.error(f"Error adding document to vector store: {e}")
-            raise
+            logger.error(f"Error adding documents to vector store: {e}")
+            raise Exception(f"Failed to add documents to vector store: {str(e)}")
     
-    async def search_similar(self, query: str, k: int = None) -> List[VectorSearchResult]:
-        """
-        Search for similar chunks using vector similarity
-        
-        Args:
-            query: Search query
-            k: Number of results to return
-            
-        Returns:
-            List[VectorSearchResult]: Similar chunks
-        """
+    def search_similar(self, query: str, k: int = 5, document_names: Optional[List[str]] = None) -> List[Dict]:
+        """Search for similar documents, optionally filtered by document names"""
         try:
-            if self.index is None or self.index.ntotal == 0:
+            if self.vector_store is None:
+                logger.warning("No vector store available")
                 return []
             
-            k = k or settings.top_k_chunks
+            logger.info(f"Searching for {k} similar documents for query: {query[:100]}...")
             
-            # Generate query embedding
-            query_embedding = await self.embeddings.aembed_query(query)
-            query_vector = np.array([query_embedding]).astype('float32')
-            faiss.normalize_L2(query_vector)
+            # Perform similarity search with a larger k to account for filtering
+            search_k = k * 3 if document_names else k
+            docs = self.vector_store.similarity_search_with_score(query, k=search_k)
             
-            # Search
-            scores, indices = self.index.search(query_vector, min(k, self.index.ntotal))
-            
-            # Format results
             results = []
-            for score, idx in zip(scores[0], indices[0]):
-                if idx == -1:  # No more results
-                    break
+            for doc, score in docs:
+                # Filter by document names if specified
+                if document_names and doc.metadata.get("source") not in document_names:
+                    continue
+                    
+                result = {
+                    "content": doc.page_content,
+                    "metadata": doc.metadata,
+                    "score": float(score)
+                }
+                results.append(result)
                 
-                if score >= settings.similarity_threshold:
-                    metadata = self.chunk_metadata[idx]
-                    result = VectorSearchResult(
-                        content=metadata.get('content', ''),
-                        score=float(score),
-                        metadata=metadata,
-                        source_document=metadata.get('filename', '')
-                    )
-                    results.append(result)
+                # Stop when we have enough results
+                if len(results) >= k:
+                    break
             
+            logger.info(f"Found {len(results)} similar documents")
             return results
             
         except Exception as e:
             logger.error(f"Error searching vector store: {e}")
-            return []
-    
-    async def list_documents(self) -> List[DocumentInfo]:
-        """List all documents in the vector store"""
-        try:
-            documents = []
-            for filename, info in self.documents.items():
-                doc_info = DocumentInfo(
-                    filename=filename,
-                    upload_date=info['upload_date'],
-                    file_size=info['file_size'],
-                    pages=info['pages'],
-                    chunks=info['chunks'],
-                    metadata={}
-                )
-                documents.append(doc_info)
-            
-            return documents
-            
-        except Exception as e:
-            logger.error(f"Error listing documents: {e}")
-            return []
-    
-    async def get_document_info(self, filename: str) -> Optional[DocumentInfo]:
-        """Get information about a specific document"""
-        try:
-            if filename not in self.documents:
-                return None
-            
-            info = self.documents[filename]
-            return DocumentInfo(
-                filename=filename,
-                upload_date=info['upload_date'],
-                file_size=info['file_size'],
-                pages=info['pages'],
-                chunks=info['chunks'],
-                metadata={}
-            )
-            
-        except Exception as e:
-            logger.error(f"Error getting document info: {e}")
-            return None
-    
-    async def remove_document(self, filename: str) -> bool:
-        """
-        Remove document from vector store
-        
-        Args:
-            filename: Document filename to remove
-            
-        Returns:
-            bool: True if document was removed
-        """
-        try:
-            if filename not in self.documents:
-                return False
-            
-            # Find chunks belonging to this document
-            chunks_to_remove = []
-            for i, metadata in enumerate(self.chunk_metadata):
-                if metadata.get('filename') == filename:
-                    chunks_to_remove.append(i)
-            
-            if not chunks_to_remove:
-                logger.warning(f"No chunks found for document {filename}")
-                return False
-            
-            # Remove from FAISS index (this is complex, so we'll rebuild)
-            await self._rebuild_index_without_document(filename)
-            
-            # Remove from documents dict
-            del self.documents[filename]
-            
-            logger.info(f"Removed document {filename} with {len(chunks_to_remove)} chunks")
-            return True
-            
-        except Exception as e:
-            logger.error(f"Error removing document: {e}")
-            return False
-    
-    async def _rebuild_index_without_document(self, filename_to_remove: str):
-        """Rebuild FAISS index without specified document"""
-        try:
-            # Create new index
-            new_index = faiss.IndexFlatIP(self.dimension)
-            new_metadata = []
-            
-            # Re-embed all documents except the one to remove
-            for filename, info in self.documents.items():
-                if filename == filename_to_remove:
-                    continue
-                
-                # Get chunks for this document
-                doc_chunks = [meta for meta in self.chunk_metadata 
-                            if meta.get('filename') == filename]
-                
-                if doc_chunks:
-                    # Re-embed chunks
-                    texts = [chunk.get('content', '') for chunk in doc_chunks]
-                    embeddings = await self.embeddings.aembed_documents(texts)
-                    embeddings_array = np.array(embeddings).astype('float32')
-                    faiss.normalize_L2(embeddings_array)
-                    
-                    # Add to new index
-                    new_index.add(embeddings_array)
-                    new_metadata.extend(doc_chunks)
-            
-            # Replace old index
-            self.index = new_index
-            self.chunk_metadata = new_metadata
-            
-        except Exception as e:
-            logger.error(f"Error rebuilding index: {e}")
-            raise
+            raise Exception(f"Failed to search vector store: {str(e)}")
     
     def has_documents(self) -> bool:
         """Check if vector store has any documents"""
-        return len(self.documents) > 0
+        return self.vector_store is not None and len(self.documents) > 0
     
-    def get_stats(self) -> Dict[str, Any]:
-        """Get vector store statistics"""
-        return {
-            "total_documents": len(self.documents),
-            "total_vectors": self.index.ntotal if self.index else 0,
-            "dimension": self.dimension
-        }
+    def get_all_documents(self) -> List[Document]:
+        """Get all documents in the vector store"""
+        return self.documents.copy()
+    
+    def clear_store(self) -> None:
+        """Clear the vector store"""
+        try:
+            self.vector_store = None
+            self.documents = []
+            
+            # Remove saved files
+            if os.path.exists(self.store_path):
+                import shutil
+                shutil.rmtree(self.store_path)
+            if os.path.exists(self.metadata_path):
+                os.remove(self.metadata_path)
+            
+            logger.info("Vector store cleared")
+            
+        except Exception as e:
+            logger.error(f"Error clearing vector store: {e}")
+            raise Exception(f"Failed to clear vector store: {str(e)}")
+    
+    def save_vector_store(self) -> None:
+        """Save vector store to disk"""
+        try:
+            if self.vector_store is not None:
+                self.vector_store.save_local(self.store_path)
+                
+                # Save metadata separately
+                with open(self.metadata_path, 'wb') as f:
+                    pickle.dump(self.documents, f)
+                
+                logger.info("Vector store saved to disk")
+                
+        except Exception as e:
+            logger.error(f"Error saving vector store: {e}")
+    
+    def delete_document(self, document_name: str) -> None:
+        """Delete a specific document from the vector store"""
+        try:
+            if not self.vector_store:
+                logger.warning("No vector store to delete from")
+                return
+            
+            # Filter out documents with the specified source
+            original_count = len(self.documents)
+            self.documents = [doc for doc in self.documents if doc.metadata.get("source") != document_name]
+            
+            if len(self.documents) == original_count:
+                logger.warning(f"Document '{document_name}' not found in vector store")
+                return
+            
+            # Rebuild vector store with remaining documents
+            if self.documents:
+                texts = [doc.page_content for doc in self.documents]
+                metadatas = [doc.metadata for doc in self.documents]
+                
+                self.vector_store = FAISS.from_texts(
+                    texts, 
+                    self.embeddings, 
+                    metadatas=metadatas
+                )
+                
+                # Save updated vector store
+                self.save_vector_store()
+                logger.info(f"Document '{document_name}' deleted. {len(self.documents)} documents remaining")
+            else:
+                # No documents left, clear the store
+                self.clear_store()
+                logger.info(f"Document '{document_name}' deleted. Vector store is now empty")
+                
+        except Exception as e:
+            logger.error(f"Error deleting document '{document_name}': {e}")
+            raise
+
+    def load_vector_store(self) -> None:
+        """Load vector store from disk"""
+        try:
+            if os.path.exists(self.store_path) and os.path.exists(self.metadata_path):
+                self.vector_store = FAISS.load_local(
+                    self.store_path, 
+                    self.embeddings,
+                    allow_dangerous_deserialization=True
+                )
+                
+                # Load metadata
+                with open(self.metadata_path, 'rb') as f:
+                    self.documents = pickle.load(f)
+                
+                logger.info(f"Loaded vector store with {len(self.documents)} documents")
+            else:
+                logger.info("No existing vector store found")
+                
+        except Exception as e:
+            logger.error(f"Error loading vector store: {e}")
+            logger.info("Starting with empty vector store")
+            self.vector_store = None
+            self.documents = []

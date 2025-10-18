@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MessageSquare, FileText, HelpCircle, FolderOpen, Upload, Home, Sparkles } from "lucide-react";
+import { MessageSquare, FileText, HelpCircle, FolderOpen, Upload, Home, Sparkles, RefreshCw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ChatView from "@/components/app/ChatView";
 import SummaryView from "@/components/app/SummaryView";
@@ -16,11 +16,30 @@ const AppPage = () => {
 
   const handleUploadSuccess = (filename: string) => {
     setDocuments(prev => [...prev, filename]);
+    // Refresh current session documents
+    fetchCurrentSessionDocuments();
   };
 
   const handleDeleteDocument = (filename: string) => {
     setDocuments(prev => prev.filter(doc => doc !== filename));
+    // Refresh current session documents
+    fetchCurrentSessionDocuments();
   };
+
+  const fetchCurrentSessionDocuments = async () => {
+    try {
+      const response = await fetch("http://localhost:8000/current-session-documents");
+      const data = await response.json();
+      setDocuments(data.documents || []);
+    } catch (error) {
+      console.error("Error fetching current session documents:", error);
+    }
+  };
+
+  // Fetch current session documents on component mount
+  useEffect(() => {
+    fetchCurrentSessionDocuments();
+  }, []);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -40,13 +59,22 @@ const AppPage = () => {
             <Button 
               variant="ghost" 
               size="sm"
+              onClick={fetchCurrentSessionDocuments}
+              title="Refresh current session documents"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm"
               onClick={() => navigate("/")}
             >
               <Home className="h-4 w-4 mr-2" />
               Home
             </Button>
             <div className="px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-sm">
-              {documents.length} {documents.length === 1 ? 'document' : 'documents'}
+              {documents.length} {documents.length === 1 ? 'document' : 'documents'} in session
             </div>
           </div>
         </div>

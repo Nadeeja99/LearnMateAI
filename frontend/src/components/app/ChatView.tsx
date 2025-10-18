@@ -60,11 +60,19 @@ const ChatView = ({ documents }: ChatViewProps) => {
     setIsLoading(true);
 
     try {
-      // TODO: Replace with actual API call
+      // Get current session documents from backend
+      const sessionResponse = await fetch("http://localhost:8000/current-session-documents");
+      const sessionData = await sessionResponse.json();
+      
+      console.log("Current session documents for question:", sessionData.documents);
+      
       const response = await fetch("http://localhost:8000/ask", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: input }),
+        body: JSON.stringify({ 
+          question: input,
+          session_documents: sessionData.documents
+        }),
       });
 
       if (response.ok) {

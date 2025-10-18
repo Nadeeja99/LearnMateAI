@@ -26,9 +26,21 @@ const SummaryView = ({ documents }: SummaryViewProps) => {
     setIsGenerating(true);
     
     try {
-      // TODO: Replace with actual API call
+      // Get current session documents from backend
+      const sessionResponse = await fetch("http://localhost:8000/current-session-documents");
+      const sessionData = await sessionResponse.json();
+      
+      console.log("Current session documents:", sessionData.documents);
+      
       const response = await fetch("http://localhost:8000/summarize", {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          document_name: null, // Use all current session documents
+          session_documents: sessionData.documents
+        }),
       });
 
       if (response.ok) {

@@ -1,154 +1,153 @@
-"""
-RAG (Retrieval-Augmented Generation) chain implementation
-Handles conversation memory, question answering, summarization, and quiz generation
-"""
-
 import logging
-from typing import List, Dict, Any, Optional, Tuple
-from datetime import datetime
-from langchain.chat_models import ChatOpenAI
-from langchain.memory import ConversationBufferMemory
-from langchain.chains import ConversationalRetrievalChain
-from langchain.prompts import PromptTemplate
-from langchain.schema import BaseRetriever
-
-from .config import settings
-from .vector_store import VectorStoreManager
-from .models import QuizQuestion, DifficultyLevel
+from typing import List, Dict, Any, Optional
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import PromptTemplate
+# from langchain.memory import ConversationBufferMemory  # Removed for now
 
 logger = logging.getLogger(__name__)
 
 class RAGChain:
-    """Handles RAG operations for question answering, summarization, and quiz generation"""
+    """Handle RAG (Retrieval-Augmented Generation) operations"""
     
-    def __init__(self):
+    def __init__(self, openai_api_key: str, vector_store):
         self.llm = ChatOpenAI(
-            openai_api_key=settings.openai_api_key,
-            model_name=settings.llm_model,
-            temperature=settings.llm_temperature,
-            max_tokens=settings.max_tokens
+            openai_api_key=openai_api_key,
+            model_name="gpt-3.5-turbo",
+            temperature=0.7,
+            max_tokens=500
         )
-        self.conversation_memories = {}  # conversation_id -> memory
-        self.vector_store = None  # Will be set by main app
-    
-    def set_vector_store(self, vector_store: VectorStoreManager):
-        """Set the vector store instance"""
         self.vector_store = vector_store
+        # self.memory = ConversationBufferMemory(
+        #     memory_key="chat_history",
+        #     return_messages=True
+        # )
     
-    async def ask_question(self, question: str, conversation_id: str) -> Tuple[str, List[str]]:
-        """
-        Answer a question using RAG
-        
-        Args:
-            question: User question
-            conversation_id: Conversation session ID
-            
-        Returns:
-            Tuple[str, List[str]]: (answer, sources)
-        """
+    async def answer_question(self, question: str, document_names: Optional[List[str]] = None, conversation_id: str = "default") -> Dict[str, Any]:
+        """Answer a question using RAG"""
         try:
-            if not self.vector_store or not self.vector_store.has_documents():
+            if not self.vector_store.has_documents():
                 raise Exception("No documents available for answering questions")
             
-            # Get conversation memory
-            memory = self._get_or_create_memory(conversation_id)
+            logger.info(f"Answering question: {question[:100]}...")
+            if document_names:
+                logger.info(f"Filtering by documents: {document_names}")
             
-            # Search for relevant chunks
-            search_results = await self.vector_store.search_similar(question)
+            # Search for relevant documents
+            relevant_docs = self.vector_store.search_similar(question, k=5, document_names=document_names)
             
-            if not search_results:
-                return "I couldn't find relevant information in the uploaded documents to answer your question.", []
+            if not relevant_docs:
+                return {
+                    "answer": "I couldn't find relevant information in the uploaded documents to answer your question.",
+                    "sources": [],
+                    "conversation_id": conversation_id
+                }
             
-            # Create context from search results
-            context = self._create_context_from_results(search_results)
-            sources = [result.content[:200] + "..." for result in search_results]
+            # Create context from relevant documents
+            context = self._create_context_from_results(relevant_docs)
             
-            # Create prompt for question answering
-            prompt = self._create_qa_prompt(context, question)
+            # Create prompt template
+            prompt_template = """Use the following pieces of context to answer the question at the end. 
+            If you don't know the answer based on the context, just say that you don't know, don't try to make up an answer.
+            
+            Context:
+            {context}
+            
+            Question: {question}
+            
+            Answer:"""
+            
+            prompt = PromptTemplate(
+                template=prompt_template,
+                input_variables=["context", "question"]
+            )
             
             # Generate answer
-            response = await self.llm.agenerate([prompt])
-            answer = response.generations[0][0].text.strip()
+            response = await self.llm.ainvoke([
+                {"role": "user", "content": prompt.format(context=context, question=question)}
+            ])
             
-            # Store in conversation memory
-            memory.save_context({"input": question}, {"output": answer})
+            answer = response.content.strip()
             
-            return answer, sources
+            # Extract sources
+            sources = [doc["metadata"]["source"] for doc in relevant_docs]
+            
+            logger.info(f"Generated answer with {len(sources)} sources")
+            
+            return {
+                "answer": answer,
+                "sources": sources,
+                "conversation_id": conversation_id
+            }
             
         except Exception as e:
             logger.error(f"Error answering question: {e}")
             raise Exception(f"Failed to answer question: {str(e)}")
     
-    async def generate_summary(self, document_name: Optional[str] = None) -> str:
-        """
-        Generate a summary of documents
-        
-        Args:
-            document_name: Specific document to summarize (optional)
-            
-        Returns:
-            str: Generated summary
-        """
+    async def generate_summary(self, document_names: Optional[List[str]] = None) -> str:
+        """Generate a summary using RAG"""
         try:
-            if not self.vector_store or not self.vector_store.has_documents():
+            if not self.vector_store.has_documents():
                 raise Exception("No documents available for summarization")
             
-            # Get all documents or specific document
-            if document_name:
-                # Get chunks for specific document
-                search_results = await self.vector_store.search_similar(
-                    "summary overview main topics key points", k=20
-                )
-                search_results = [r for r in search_results if r.source_document == document_name]
-            else:
-                # Get chunks from all documents
-                search_results = await self.vector_store.search_similar(
-                    "summary overview main topics key points", k=30
-                )
+            logger.info(f"Generating summary for documents: {document_names or 'all documents'}")
             
-            if not search_results:
-                return "No content found to summarize."
+            # Get relevant content for summarization
+            relevant_docs = self.vector_store.search_similar(
+                "summary overview main points key concepts important information", 
+                k=20,
+                document_names=document_names
+            )
+            
+            if not relevant_docs:
+                raise Exception("No suitable content found for summarization")
             
             # Create context
-            context = self._create_context_from_results(search_results)
+            context = self._create_context_from_results(relevant_docs)
             
-            # Create summarization prompt
-            prompt = self._create_summary_prompt(context, document_name)
+            # Create summary prompt
+            prompt = f"""Please create a comprehensive summary of the following document content.
+
+Document Content:
+{context}
+
+Please provide:
+1. A brief overview of the main topics
+2. Key points and important information
+3. Any notable concepts or ideas
+4. Structure the summary with headings for better readability
+
+Make the summary informative but concise, focusing on the most important information."""
             
             # Generate summary
-            response = await self.llm.agenerate([prompt])
-            summary = response.generations[0][0].text.strip()
+            response = await self.llm.ainvoke([
+                {"role": "user", "content": prompt}
+            ])
+            summary = response.content.strip()
             
+            logger.info(f"Generated summary with {len(summary)} characters")
             return summary
             
         except Exception as e:
             logger.error(f"Error generating summary: {e}")
             raise Exception(f"Failed to generate summary: {str(e)}")
     
-    async def generate_quiz(self, num_questions: int, difficulty: DifficultyLevel, 
-                          document_name: Optional[str] = None) -> List[QuizQuestion]:
-        """
-        Generate quiz questions from documents
-        
-        Args:
-            num_questions: Number of questions to generate
-            difficulty: Difficulty level
-            document_name: Specific document for quiz (optional)
-            
-        Returns:
-            List[QuizQuestion]: Generated quiz questions
-        """
+    async def generate_quiz(self, num_questions: int, difficulty: str = "medium", 
+                          document_names: Optional[List[str]] = None) -> List[Dict[str, Any]]:
+        """Generate quiz questions using RAG"""
         try:
-            if not self.vector_store or not self.vector_store.has_documents():
+            if not self.vector_store.has_documents():
                 raise Exception("No documents available for quiz generation")
             
-            # Get relevant content for quiz generation
-            search_results = await self.vector_store.search_similar(
-                "facts concepts definitions examples important information", k=20
-            )
+            logger.info(f"Generating {num_questions} {difficulty} questions")
+            if document_names:
+                logger.info(f"Filtering by documents: {document_names}")
             
-            if document_name:
-                search_results = [r for r in search_results if r.source_document == document_name]
+            # Get relevant content for quiz generation
+            search_results = self.vector_store.search_similar(
+                "facts concepts definitions examples important information", 
+                k=20,
+                document_names=document_names
+            )
             
             if not search_results:
                 raise Exception("No suitable content found for quiz generation")
@@ -160,8 +159,10 @@ class RAGChain:
             prompt = self._create_quiz_prompt(context, num_questions, difficulty)
             
             # Generate quiz
-            response = await self.llm.agenerate([prompt])
-            quiz_text = response.generations[0][0].text.strip()
+            response = await self.llm.ainvoke([
+                {"role": "user", "content": prompt}
+            ])
+            quiz_text = response.content.strip()
             
             # Parse quiz questions
             questions = self._parse_quiz_response(quiz_text)
@@ -172,169 +173,63 @@ class RAGChain:
             logger.error(f"Error generating quiz: {e}")
             raise Exception(f"Failed to generate quiz: {str(e)}")
     
-    def _get_or_create_memory(self, conversation_id: str) -> ConversationBufferMemory:
-        """Get or create conversation memory for session"""
-        if conversation_id not in self.conversation_memories:
-            self.conversation_memories[conversation_id] = ConversationBufferMemory(
-                memory_key="chat_history",
-                return_messages=True
-            )
-        return self.conversation_memories[conversation_id]
-    
-    def _create_context_from_results(self, results: List) -> str:
+    def _create_context_from_results(self, results: List[Dict]) -> str:
         """Create context string from search results"""
         context_parts = []
         for i, result in enumerate(results, 1):
-            context_parts.append(f"Source {i} (from {result.source_document}):\n{result.content}\n")
+            content = result["content"]
+            source = result["metadata"]["source"]
+            context_parts.append(f"Source {i} ({source}):\n{content}\n")
         return "\n".join(context_parts)
     
-    def _create_qa_prompt(self, context: str, question: str) -> str:
-        """Create prompt for question answering"""
-        return f"""You are a helpful AI assistant that answers questions based on the provided document content.
-
-Context from documents:
-{context}
-
-Question: {question}
-
-Instructions:
-- Answer the question based only on the information provided in the context above
-- If the context doesn't contain enough information to answer the question, say so
-- Be specific and cite relevant parts of the documents when possible
-- Keep your answer concise but comprehensive
-- If you're unsure about something, express that uncertainty
-
-Answer:"""
-    
-    def _create_summary_prompt(self, context: str, document_name: Optional[str] = None) -> str:
-        """Create prompt for document summarization"""
-        doc_ref = f" for the document '{document_name}'" if document_name else " for all uploaded documents"
-        
-        return f"""You are an expert at creating comprehensive summaries of educational content.
-
-Content{doc_ref}:
-{context}
-
-Instructions:
-- Create a well-structured summary with clear headings
-- Identify the main topics and key concepts
-- Include important details and examples
-- Organize the information logically
-- Use markdown formatting for better readability
-- Keep the summary comprehensive but concise
-
-Summary:"""
-    
-    def _create_quiz_prompt(self, context: str, num_questions: int, difficulty: DifficultyLevel) -> str:
+    def _create_quiz_prompt(self, context: str, num_questions: int, difficulty: str) -> str:
         """Create prompt for quiz generation"""
-        difficulty_instructions = {
-            DifficultyLevel.EASY: "Create simple, straightforward questions that test basic understanding",
-            DifficultyLevel.MEDIUM: "Create questions that require some analysis and application of concepts",
-            DifficultyLevel.HARD: "Create challenging questions that require deep understanding and critical thinking"
-        }
-        
-        return f"""You are an expert at creating educational quiz questions.
+        return f"""Create a {difficulty} difficulty quiz with {num_questions} multiple-choice questions based on the following document content.
 
-Content to create questions from:
+Document Content:
 {context}
 
-Instructions:
-- Create {num_questions} multiple-choice questions
-- Difficulty level: {difficulty.value} - {difficulty_instructions[difficulty]}
-- Each question should have 4 options (A, B, C, D)
-- Include one correct answer and three plausible distractors
-- Provide a brief explanation for the correct answer
-- Base questions only on the provided content
-- Format each question as follows:
+Please generate exactly {num_questions} questions. For each question, provide:
+1. A clear, well-formulated question
+2. 4 multiple choice options (A, B, C, D)
+3. The correct answer (A, B, C, or D)
+4. A brief explanation of why the answer is correct
 
-Question 1: [Question text]
-A) [Option A]
-B) [Option B]
-C) [Option C]
-D) [Option D]
-Correct Answer: [A/B/C/D]
-Explanation: [Brief explanation]
+Format your response as a JSON object with this structure:
+{{
+  "questions": [
+    {{
+      "question": "Your question here?",
+      "options": {{
+        "A": "First option",
+        "B": "Second option", 
+        "C": "Third option",
+        "D": "Fourth option"
+      }},
+      "correct_answer": "A",
+      "explanation": "Explanation of why this answer is correct"
+    }}
+  ]
+}}
 
-Quiz Questions:"""
+Make sure the questions test understanding of key concepts, facts, and important information from the document content."""
     
-    def _parse_quiz_response(self, quiz_text: str) -> List[QuizQuestion]:
-        """Parse quiz response into QuizQuestion objects"""
-        questions = []
+    def _parse_quiz_response(self, quiz_text: str) -> List[Dict[str, Any]]:
+        """Parse quiz response from AI"""
         try:
-            # Split by question markers
-            question_blocks = quiz_text.split("Question ")
+            import json
+            # Try to extract JSON from the response
+            start_idx = quiz_text.find('{')
+            end_idx = quiz_text.rfind('}') + 1
             
-            for block in question_blocks[1:]:  # Skip first empty block
-                lines = [line.strip() for line in block.split("\n") if line.strip()]
+            if start_idx != -1 and end_idx != -1:
+                json_str = quiz_text[start_idx:end_idx]
+                quiz_data = json.loads(json_str)
+                return quiz_data.get("questions", [])
+            else:
+                raise ValueError("No valid JSON found in response")
                 
-                if len(lines) < 6:  # Minimum lines for a complete question
-                    continue
-                
-                # Extract question text
-                question_text = lines[0]
-                
-                # Extract options
-                options = {}
-                correct_answer = None
-                explanation = ""
-                
-                for line in lines[1:]:
-                    if line.startswith(("A)", "B)", "C)", "D)")):
-                        option_key = line[0]
-                        option_text = line[2:].strip()
-                        options[option_key] = option_text
-                    elif line.startswith("Correct Answer:"):
-                        correct_answer = line.split(":")[1].strip()
-                    elif line.startswith("Explanation:"):
-                        explanation = line.split(":", 1)[1].strip()
-                
-                if len(options) == 4 and correct_answer and explanation:
-                    question = QuizQuestion(
-                        question=question_text,
-                        options=options,
-                        correct_answer=correct_answer,
-                        explanation=explanation
-                    )
-                    questions.append(question)
-            
         except Exception as e:
             logger.error(f"Error parsing quiz response: {e}")
-        
-        return questions
-    
-    async def clear_memory(self, conversation_id: Optional[str] = None):
-        """Clear conversation memory"""
-        try:
-            if conversation_id:
-                if conversation_id in self.conversation_memories:
-                    del self.conversation_memories[conversation_id]
-                    logger.info(f"Cleared memory for conversation {conversation_id}")
-            else:
-                self.conversation_memories.clear()
-                logger.info("Cleared all conversation memories")
-                
-        except Exception as e:
-            logger.error(f"Error clearing memory: {e}")
-            raise
-    
-    def get_conversation_history(self, conversation_id: str) -> List[Dict[str, str]]:
-        """Get conversation history for a session"""
-        try:
-            if conversation_id not in self.conversation_memories:
-                return []
-            
-            memory = self.conversation_memories[conversation_id]
-            history = []
-            
-            for message in memory.chat_memory.messages:
-                if hasattr(message, 'content'):
-                    history.append({
-                        "role": message.__class__.__name__.lower().replace("message", ""),
-                        "content": message.content
-                    })
-            
-            return history
-            
-        except Exception as e:
-            logger.error(f"Error getting conversation history: {e}")
+            # Return empty list if parsing fails
             return []

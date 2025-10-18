@@ -19,13 +19,37 @@ const DocumentsView = ({ documents, onDelete }: DocumentsViewProps) => {
     doc.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleDelete = (filename: string) => {
+  const handleDelete = async (filename: string) => {
     if (window.confirm(`Are you sure you want to delete "${filename}"?`)) {
-      onDelete(filename);
-      toast({
-        title: "Document deleted",
-        description: `${filename} has been removed`,
-      });
+      try {
+        // Call backend API to delete the document
+        const response = await fetch(`http://localhost:8000/documents/${encodeURIComponent(filename)}`, {
+          method: "DELETE",
+        });
+
+        if (response.ok) {
+          // Call parent's onDelete to update frontend state
+          onDelete(filename);
+          toast({
+            title: "Document deleted",
+            description: `${filename} has been removed from the system`,
+          });
+        } else {
+          const errorData = await response.json();
+          toast({
+            title: "Delete failed",
+            description: errorData.detail || "Failed to delete document",
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
+        console.error("Error deleting document:", error);
+        toast({
+          title: "Delete failed",
+          description: "Network error while deleting document",
+          variant: "destructive",
+        });
+      }
     }
   };
 
