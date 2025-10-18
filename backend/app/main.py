@@ -12,6 +12,7 @@ import uvicorn
 from .document_processor import DocumentProcessor
 from .vector_store import VectorStore
 from .rag_chain import RAGChain
+from .langfuse_config import langfuse_config
 
 # Load environment variables
 load_dotenv()
@@ -58,6 +59,13 @@ def initialize_rag_system():
         
         # Clear any existing vector store to start fresh
         vector_store.clear_store()
+        
+        # Log LangFuse status
+        if langfuse_config.is_enabled():
+            logger.info("LangFuse observability enabled")
+        else:
+            logger.info("LangFuse observability disabled")
+        
         logger.info("RAG system initialized successfully with fresh vector store")
         
     except Exception as e:

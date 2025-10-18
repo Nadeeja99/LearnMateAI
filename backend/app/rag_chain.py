@@ -6,6 +6,12 @@ from langchain_core.prompts import PromptTemplate
 
 logger = logging.getLogger(__name__)
 
+# Import LangFuse for tracing (optional)
+try:
+    from .langfuse_config import langfuse_config
+except ImportError:
+    langfuse_config = None
+
 class RAGChain:
     """Handle RAG (Retrieval-Augmented Generation) operations"""
     
@@ -24,6 +30,29 @@ class RAGChain:
     
     async def answer_question(self, question: str, document_names: Optional[List[str]] = None, conversation_id: str = "default") -> Dict[str, Any]:
         """Answer a question using RAG"""
+        # Create LangFuse trace
+        trace_context = None
+        if langfuse_config and langfuse_config.is_enabled():
+            trace_context = langfuse_config.create_trace(
+                name="answer_question",
+                input={"question": question, "document_names": document_names, "conversation_id": conversation_id}
+            )
+        
+        # Use context manager for LangFuse tracing
+        if trace_context:
+            with trace_context as trace:
+                try:
+                    result = await self._answer_question_impl(question, document_names, conversation_id)
+                    trace.update(output=result)
+                    return result
+                except Exception as e:
+                    trace.update(output={"error": str(e)})
+                    raise
+        else:
+            return await self._answer_question_impl(question, document_names, conversation_id)
+    
+    async def _answer_question_impl(self, question: str, document_names: Optional[List[str]], conversation_id: str) -> Dict[str, Any]:
+        """Implementation of answer_question with optional tracing"""
         try:
             if not self.vector_store.has_documents():
                 raise Exception("No documents available for answering questions")
@@ -85,6 +114,29 @@ class RAGChain:
     
     async def generate_summary(self, document_names: Optional[List[str]] = None) -> str:
         """Generate a summary using RAG"""
+        # Create LangFuse trace
+        trace_context = None
+        if langfuse_config and langfuse_config.is_enabled():
+            trace_context = langfuse_config.create_trace(
+                name="generate_summary",
+                input={"document_names": document_names}
+            )
+        
+        # Use context manager for LangFuse tracing
+        if trace_context:
+            with trace_context as trace:
+                try:
+                    result = await self._generate_summary_impl(document_names)
+                    trace.update(output={"summary": result, "length": len(result)})
+                    return result
+                except Exception as e:
+                    trace.update(output={"error": str(e)})
+                    raise
+        else:
+            return await self._generate_summary_impl(document_names)
+    
+    async def _generate_summary_impl(self, document_names: Optional[List[str]]) -> str:
+        """Implementation of generate_summary with optional tracing"""
         try:
             if not self.vector_store.has_documents():
                 raise Exception("No documents available for summarization")
@@ -134,6 +186,29 @@ Make the summary informative but concise, focusing on the most important informa
     async def generate_quiz(self, num_questions: int, difficulty: str = "medium", 
                           document_names: Optional[List[str]] = None) -> List[Dict[str, Any]]:
         """Generate quiz questions using RAG"""
+        # Create LangFuse trace
+        trace_context = None
+        if langfuse_config and langfuse_config.is_enabled():
+            trace_context = langfuse_config.create_trace(
+                name="generate_quiz",
+                input={"num_questions": num_questions, "difficulty": difficulty, "document_names": document_names}
+            )
+        
+        # Use context manager for LangFuse tracing
+        if trace_context:
+            with trace_context as trace:
+                try:
+                    result = await self._generate_quiz_impl(num_questions, difficulty, document_names)
+                    trace.update(output={"quiz": result, "num_questions": len(result)})
+                    return result
+                except Exception as e:
+                    trace.update(output={"error": str(e)})
+                    raise
+        else:
+            return await self._generate_quiz_impl(num_questions, difficulty, document_names)
+    
+    async def _generate_quiz_impl(self, num_questions: int, difficulty: str, document_names: Optional[List[str]]) -> List[Dict[str, Any]]:
+        """Implementation of generate_quiz with optional tracing"""
         try:
             if not self.vector_store.has_documents():
                 raise Exception("No documents available for quiz generation")
@@ -166,8 +241,9 @@ Make the summary informative but concise, focusing on the most important informa
             
             # Parse quiz questions
             questions = self._parse_quiz_response(quiz_text)
+            final_questions = questions[:num_questions]
             
-            return questions[:num_questions]
+            return final_questions
             
         except Exception as e:
             logger.error(f"Error generating quiz: {e}")
