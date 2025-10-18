@@ -1,0 +1,2 @@
+# LearnMateAI
+Personal Learning Assistant
