@@ -11,11 +11,11 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first for better caching
-COPY requirements.txt .
+# Copy the lock first for better layer caching (exact versions, same as Render and CI)
+COPY requirements.lock .
 
 # Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.lock
 
 # Copy application code
 COPY . .

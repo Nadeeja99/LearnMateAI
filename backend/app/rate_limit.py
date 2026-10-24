@@ -4,21 +4,25 @@ In-process sliding-window rate limiting for the endpoints that cost money (LLM, 
 Limits apply per session AND per client IP: session ids are minted by the client, so the
 IP limit is what stops one caller from rotating ids to bypass the session limit.
 
-State is per process. That fits the single uvicorn worker this app runs; scaling out to
-several workers or instances needs a shared store such as Redis.
+By default state lives in this process, which fits a single uvicorn worker. Set REDIS_URL to
+share limits across several workers or instances (e.g. when scaling out on Render).
 """
 
+import logging
 import math
 import threading
 import time
+import uuid
 from collections import defaultdict, deque
 from dataclasses import dataclass
-from typing import Callable, Deque, Dict, Optional
+from typing import Any, Callable, Deque, Dict, Optional, Union
 
 from fastapi import Depends, HTTPException, Request
 
 from .config import settings
 from .sessions import require_session_id
+
+logger = logging.getLogger(__name__)
 
 
 class SlidingWindowLimiter:
@@ -60,11 +64,89 @@ class SlidingWindowLimiter:
         return hits
 
 
+class RedisSlidingWindowLimiter:
+    """Same contract as SlidingWindowLimiter, with hits stored in Redis so every worker shares them.
+
+    Each key is a sorted set of hit timestamps (wall clock, comparable across machines). Check and
+    record are separate round trips, so concurrent requests can overshoot by a request or two;
+    that is acceptable for cost protection. If Redis is unreachable the limiter fails open (logs
+    and allows) rather than turning a Redis outage into an app outage.
+    """
+
+    def __init__(self, client: Any, prefix: str, limit: int, window_seconds: float, clock: Callable[[], float] = time.time):
+        self.client = client
+        self.prefix = prefix
+        self.limit = limit
+        self.window = window_seconds
+        self.clock = clock
+
+    def _key(self, key: str) -> str:
+        return f"ratelimit:{self.prefix}:{key}"
+
+    def retry_after(self, key: str) -> Optional[float]:
+        if self.limit <= 0:
+            return None
+        try:
+            now, redis_key = self.clock(), self._key(key)
+            pipe = self.client.pipeline()
+            pipe.zremrangebyscore(redis_key, 0, now - self.window)
+            pipe.zcard(redis_key)
+            pipe.zrange(redis_key, 0, 0, withscores=True)
+            _, count, oldest = pipe.execute()
+            if count < self.limit:
+                return None
+            return oldest[0][1] + self.window - now if oldest else self.window
+        except Exception:
+            logger.exception("Rate limiter: Redis unavailable, allowing request")
+            return None
+
+    def record(self, key: str) -> None:
+        if self.limit <= 0:
+            return
+        try:
+            now, redis_key = self.clock(), self._key(key)
+            pipe = self.client.pipeline()
+            pipe.zadd(redis_key, {f"{now}:{uuid.uuid4().hex[:8]}": now})  # unique member per hit
+            pipe.expire(redis_key, math.ceil(self.window) + 1)  # idle keys clean themselves up
+            pipe.execute()
+        except Exception:
+            logger.exception("Rate limiter: Redis unavailable, hit not recorded")
+
+    def reset(self) -> None:
+        try:
+            for redis_key in self.client.scan_iter(match=f"ratelimit:{self.prefix}:*"):
+                self.client.delete(redis_key)
+        except Exception:
+            logger.exception("Rate limiter: Redis unavailable, reset skipped")
+
+
+Limiter = Union[SlidingWindowLimiter, RedisSlidingWindowLimiter]
+
+
+def make_limiter(prefix: str, limit: int, window_seconds: float, redis_client: Any = None) -> Limiter:
+    """Redis-backed when a client is given (shared across workers), in-memory otherwise."""
+    if redis_client is not None:
+        return RedisSlidingWindowLimiter(redis_client, prefix, limit, window_seconds)
+    return SlidingWindowLimiter(limit, window_seconds)
+
+
+def _redis_client() -> Any:
+    if not settings.redis_url:
+        return None
+    import redis  # only needed when REDIS_URL is configured
+    from redis.backoff import NoBackoff
+    from redis.retry import Retry
+
+    logger.info("Rate limits are shared via Redis")
+    # No retries: when Redis is down we fail open immediately instead of stalling every request
+    return redis.Redis.from_url(settings.redis_url, socket_timeout=0.5, socket_connect_timeout=0.5, retry=Retry(NoBackoff(), 0))
+
+
 @dataclass
 class RatePolicy:
     name: str
-    per_session: SlidingWindowLimiter
-    per_ip: SlidingWindowLimiter
+    per_session: Limiter
+    per_ip: Limiter
 
     def check(self, session_id: str, client_ip: str) -> None:
         """Raise 429 if either limit is exhausted; otherwise record the hit against both."""
@@ -80,15 +162,16 @@ class RatePolicy:
         self.per_ip.record(client_ip)
 
 
+_redis = _redis_client()
 AI_POLICY = RatePolicy(
     "AI",
-    per_session=SlidingWindowLimiter(settings.rate_limit_ai_per_minute, 60),
-    per_ip=SlidingWindowLimiter(settings.rate_limit_ai_per_ip_per_minute, 60),
+    per_session=make_limiter("ai:session", settings.rate_limit_ai_per_minute, 60, _redis),
+    per_ip=make_limiter("ai:ip", settings.rate_limit_ai_per_ip_per_minute, 60, _redis),
 )
 UPLOAD_POLICY = RatePolicy(
     "upload",
-    per_session=SlidingWindowLimiter(settings.rate_limit_uploads_per_hour, 3600),
-    per_ip=SlidingWindowLimiter(settings.rate_limit_uploads_per_ip_per_hour, 3600),
+    per_session=make_limiter("upload:session", settings.rate_limit_uploads_per_hour, 3600, _redis),
+    per_ip=make_limiter("upload:ip", settings.rate_limit_uploads_per_ip_per_hour, 3600, _redis),
 )
 
 

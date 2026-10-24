@@ -55,33 +55,29 @@ class LangfuseConfig:
         return self.client if self.is_enabled() else None
     
     def create_trace(self, name: str, **kwargs):
-        """Create a new trace for tracking operations"""
+        """Context manager for an LLM *generation* (model + token usage => Langfuse computes cost)"""
         if not self.is_enabled():
             return None
         
         try:
-            # Use the correct LangFuse API - return the context manager
-            return self.client.start_as_current_observation(
-                name=name,
-                **kwargs
-            )
+            return self.client.start_as_current_generation(name=name, **kwargs)
         except Exception as e:
             logger.error(f"Failed to create LangFuse trace: {e}")
             return None
     
-    def start_span(self, name: str, **kwargs):
-        """Start a detached span that the caller must end().
+    def start_generation(self, name: str, **kwargs):
+        """Start a detached generation that the caller must end().
 
-        Unlike create_trace this does not bind the span to the current context,
-        so it is safe to hold open across yields in an async generator.
+        Unlike create_trace this does not bind it to the current context, so it is safe to
+        hold open across yields in an async generator (streaming responses).
         """
         if not self.is_enabled():
             return None
 
         try:
-            return self.client.start_span(name=name, **kwargs)
+            return self.client.start_generation(name=name, **kwargs)
         except Exception as e:
-            logger.error(f"Failed to start LangFuse span: {e}")
+            logger.error(f"Failed to start LangFuse generation: {e}")
             return None
 
     def flush(self):

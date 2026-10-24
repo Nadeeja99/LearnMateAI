@@ -66,6 +66,14 @@ def _distributions(rows) -> Dict[str, Dict[str, int]]:
     return {"session_types": dict(session_types), "document_types": dict(document_types), "daily": dict(sorted(daily.items()))}
 
 
+def percentile(values: List[float], pct: float) -> Optional[float]:
+    """Nearest-rank percentile of already-sorted values"""
+    if not values:
+        return None
+    rank = max(1, -(-len(values) * pct // 100))  # ceil without math import
+    return values[int(rank) - 1]
+
+
 def _most_common(counts: Dict[str, int]) -> Optional[str]:
     return max(counts.items(), key=lambda item: item[1])[0] if counts else None
 
@@ -186,6 +194,41 @@ class LearningAnalytics:
             (metric_name, value, datetime.now().isoformat(), to_json(context)),
         )
         logger.info(f"Added performance metric: {metric_name} = {value}")
+
+    def get_model_performance(self, days: int = 30) -> Dict[str, Any]:
+        """Aggregate LLM quality signals: time-to-first-token and answer feedback (no user data)"""
+        cutoff = (datetime.now() - timedelta(days=days)).isoformat()
+        rows = self.db.query(
+            "SELECT metric_name, value, timestamp, context FROM performance_metrics "
+            "WHERE timestamp >= ? AND metric_name IN ('llm_ttft_ms', 'answer_feedback') ORDER BY seq",
+            (cutoff,),
+        )
+        ttft = sorted(r["value"] for r in rows if r["metric_name"] == "llm_ttft_ms")
+        by_day: Dict[str, List[float]] = {}
+        by_model: Dict[str, List[float]] = {}
+        up = down = 0
+        for r in rows:
+            context = from_json(r["context"], {})
+            if r["metric_name"] == "llm_ttft_ms":
+                by_day.setdefault(r["timestamp"][:10], []).append(r["value"])
+                by_model.setdefault(context.get("model") or "unknown", []).append(r["value"])
+            elif r["value"] > 0:
+                up += 1
+            else:
+                down += 1
+
+        return {
+            "days": days,
+            "ttft_ms": {
+                "count": len(ttft),
+                "p50": percentile(ttft, 50),
+                "p95": percentile(ttft, 95),
+                "mean": sum(ttft) / len(ttft) if ttft else None,
+            },
+            "daily_ttft_p50": {day: percentile(sorted(v), 50) for day, v in sorted(by_day.items())},
+            "by_model": {model: {"count": len(v), "p50": percentile(sorted(v), 50)} for model, v in sorted(by_model.items())},
+            "feedback": {"up": up, "down": down, "helpful_rate": up / (up + down) if up + down else None},
+        }
 
     def get_performance_metrics(self, metric_name: str = None, days: int = 30) -> List[Dict[str, Any]]:
         """Get performance metrics"""

@@ -11,8 +11,11 @@ import InlineError from "@/components/app/InlineError";
 import { AnalyticsSkeleton } from "@/components/app/analytics/AnalyticsWidgets";
 import { GlobalAnalyticsPanel, UserAnalyticsPanel } from "@/components/app/analytics/AnalyticsPanels";
 import type { GlobalAnalytics, UserAnalytics } from "@/components/app/analytics/types";
+import ModelPerformancePanel from "@/components/app/analytics/ModelPerformancePanel";
 
-type Tab = "user" | "global";
+type Tab = "user" | "global" | "model";
+
+const TAB_LABELS: Record<Tab, string> = { user: "Your progress", global: "Global insights", model: "Model performance" };
 
 const AnalyticsDashboard = () => {
   const [userAnalytics, setUserAnalytics] = useState<UserAnalytics | null>(null);
@@ -82,7 +85,7 @@ const AnalyticsDashboard = () => {
       />
 
       <div className="mb-8 inline-flex rounded-lg border p-0.5" role="tablist">
-        {(["user", "global"] as const).map((tab) => (
+        {(["user", "global", "model"] as const).map((tab) => (
           <button
             key={tab}
             role="tab"
@@ -92,13 +95,13 @@ const AnalyticsDashboard = () => {
               activeTab === tab ? "bg-accent font-medium text-foreground" : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            {tab === "user" ? "Your progress" : "Global insights"}
+            {TAB_LABELS[tab]}
           </button>
         ))}
       </div>
 
-      {error && <InlineError className="mb-6" title="Couldn't load analytics" message={error} onRetry={loadAnalytics} />}
-      {renderBody()}
+      {error && activeTab !== "model" && <InlineError className="mb-6" title="Couldn't load analytics" message={error} onRetry={loadAnalytics} />}
+      {activeTab === "model" ? <ModelPerformancePanel /> : renderBody()}
     </div>
   );
 };

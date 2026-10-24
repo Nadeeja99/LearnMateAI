@@ -157,6 +157,25 @@ LearnMate AI is a cutting-edge personal learning assistant that combines documen
 - Monitor your learning progress
 - Track quiz scores and chat interactions
 
+## ✅ Testing & CI
+
+Every push and pull request runs [`.github/workflows/ci.yml`](.github/workflows/ci.yml): backend and frontend checks in parallel, then the end-to-end suite.
+
+| Check | Command (run locally) |
+|---|---|
+| Backend tests | `cd backend && venv/bin/pip install -r requirements-dev.txt && venv/bin/python -m pytest` |
+| Backend lint | `cd backend && venv/bin/python -m pyflakes app tests` |
+| Frontend lint | `cd frontend && npm run lint -- --max-warnings=0` |
+| Typecheck | `cd frontend && npx tsc -p tsconfig.app.json --noEmit && npx tsc -p tsconfig.e2e.json` |
+| Unit tests | `cd frontend && npm test` |
+| End-to-end | `cd frontend && npm run e2e` (uses your installed Chrome) |
+
+The end-to-end suite ([`frontend/e2e`](frontend/e2e)) runs the real API with a scripted LLM ([`backend/tests/e2e_server.py`](backend/tests/e2e_server.py)) behind a production build served with the exact headers from `render.yaml`, so it also verifies the Content-Security-Policy. No OpenAI calls are made.
+
+**Dependencies:** edit `backend/requirements.txt`, then run `scripts/lock-requirements.sh` to regenerate `backend/requirements.lock` (exact versions for Render, Docker and CI).
+
+**After deploying:** `backend/venv/bin/python scripts/check_streaming.py https://<your-backend>` confirms answers stream token by token through the hosting proxy (it makes one small OpenAI call).
+
 ## 🔧 Configuration
 
 ### Environment Variables

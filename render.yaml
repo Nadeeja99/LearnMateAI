@@ -8,7 +8,10 @@ services:
     # are lost on every deploy, restart, or idle spin-down. Use a paid plan (e.g. starter)
     # or move storage off-box before relying on persistence.
     plan: free
-    buildCommand: pip install --upgrade pip && pip install -r backend/requirements.txt
+    # requirements.lock pins every transitive package (regenerate with scripts/lock-requirements.sh)
+    buildCommand: pip install --upgrade pip && pip install -r backend/requirements.lock
+    # Render routes traffic only to instances whose /health responds, and restarts unhealthy ones
+    healthCheckPath: /health
     # --proxy-headers: take the client IP from Render's proxy (X-Forwarded-For) for per-IP rate limits
     startCommand: cd backend && python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips '*'
     envVars:
@@ -48,9 +51,7 @@ services:
     buildCommand: cd frontend && npm ci && npm run build
     staticPublishPath: ./frontend/dist
     routes:
-      - type: rewrite
-        source: /api/*
-        destination: https://learnmate-backend-koe5.onrender.com/$1
+      # SPA: serve index.html for client-side routes (the app calls the API directly via VITE_API_URL)
       - type: rewrite
         source: /*
         destination: /index.html
@@ -58,13 +59,14 @@ services:
       - key: VITE_API_URL
         value: https://learnmate-backend-koe5.onrender.com
     # Security headers. The CSP is the main guard for the session id kept in localStorage:
-    # no inline or third-party scripts can run. The one sha256 entry allows next-themes'
-    # inline theme script; if next-themes or its ThemeProvider props change, recompute it
-    # (the browser console logs the expected hash when it blocks the script).
+    # only the app's own bundled scripts can run - no inline or third-party scripts.
+    # (next-themes renders an inline <script>, but React-inserted scripts never execute, so it
+    # needs no allowance; the theme is applied from React instead. frontend/e2e/security.spec.ts
+    # checks this policy against every feature.)
     headers:
       - path: /*
         name: Content-Security-Policy
-        value: "default-src 'self'; script-src 'self' 'sha256-S2r3pSKm6jdDnftV06b4jMah4fNHdi1l9KhwcJRQCuc='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' https://learnmate-backend-koe5.onrender.com wss://learnmate-backend-koe5.onrender.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+        value: "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' https://learnmate-backend-koe5.onrender.com wss://learnmate-backend-koe5.onrender.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
       - path: /*
         name: X-Content-Type-Options
         value: nosniff

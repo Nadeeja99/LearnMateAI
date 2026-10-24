@@ -22,6 +22,7 @@ export const API_CONFIG = {
     ANALYTICS_USER: (userId: string) => `${API_BASE_URL}/analytics/user/${userId}`,
     ANALYTICS_GLOBAL: `${API_BASE_URL}/analytics/global`,
     ANALYTICS_PERFORMANCE: `${API_BASE_URL}/analytics/performance-metrics`,
+    MODEL_PERFORMANCE: `${API_BASE_URL}/analytics/model-performance`,
     TRACK_QUIZ: `${API_BASE_URL}/analytics/track-quiz`,
     FEEDBACK: `${API_BASE_URL}/analytics/feedback`,
     CONFIG: `${API_BASE_URL}/config`,

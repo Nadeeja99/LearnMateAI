@@ -2,6 +2,7 @@
 import json
 import os
 import pickle
+import time
 
 import pytest
 from fastapi.testclient import TestClient
@@ -278,3 +279,46 @@ def test_metadata_saved_as_json_and_legacy_pickle_migrated(monkeypatch, tmp_path
     assert list(migrated.document_summaries()) == ["a.pdf"]
     assert os.path.exists(os.path.join(store_dir, "metadata.json"))
     assert not os.path.exists(os.path.join(store_dir, "metadata.pkl"))
+
+
+# ----- 8.6 shared (Redis) rate limits -----
+
+def test_redis_limiter_shares_limits_across_workers():
+    import fakeredis
+    from app.rate_limit import RedisSlidingWindowLimiter
+
+    server = fakeredis.FakeServer()
+    now = [1000.0]
+    # Two "workers", each with its own client and limiter object, backed by the same Redis
+    worker_a = RedisSlidingWindowLimiter(fakeredis.FakeRedis(server=server), "ai:session", 2, 60, clock=lambda: now[0])
+    worker_b = RedisSlidingWindowLimiter(fakeredis.FakeRedis(server=server), "ai:session", 2, 60, clock=lambda: now[0])
+
+    worker_a.record("s1")
+    worker_b.record("s1")
+    assert worker_a.retry_after("s1") == pytest.approx(60)  # b's hit counts against a
+    assert worker_b.retry_after("other") is None
+    now[0] += 61
+    assert worker_a.retry_after("s1") is None  # window slid
+
+
+def test_redis_limiter_fails_open_when_redis_is_down():
+    import redis
+    from app.rate_limit import RedisSlidingWindowLimiter
+
+    from redis.backoff import NoBackoff
+    from redis.retry import Retry
+
+    unreachable = redis.Redis(host="127.0.0.1", port=1, socket_connect_timeout=0.2, socket_timeout=0.2, retry=Retry(NoBackoff(), 0))
+    limiter = RedisSlidingWindowLimiter(unreachable, "ai:session", 1, 60)
+    started = time.monotonic()
+    limiter.record("s1")
+    assert limiter.retry_after("s1") is None
+    assert time.monotonic() - started < 1.5  # fails open fast, no retry storm
+
+
+def test_make_limiter_picks_backend():
+    import fakeredis
+    from app.rate_limit import RedisSlidingWindowLimiter, make_limiter
+
+    assert isinstance(make_limiter("x", 5, 60), SlidingWindowLimiter)
+    assert isinstance(make_limiter("x", 5, 60, fakeredis.FakeRedis()), RedisSlidingWindowLimiter)

@@ -4,6 +4,7 @@ import json
 import logging
 import time
 from contextlib import aclosing
+from datetime import datetime, timedelta, timezone
 from dataclasses import dataclass, field
 from typing import List, Dict, Any, Optional, AsyncIterator, Awaitable, Callable
 
@@ -49,6 +50,23 @@ class GenerationStats:
     @property
     def text(self) -> str:
         return "".join(self.parts).strip()
+
+
+def _langfuse_usage(telemetry: Dict[str, Any], started_at: Optional[datetime] = None) -> Dict[str, Any]:
+    """Generation fields for Langfuse: model, token usage (=> cost) and first-token time (=> TTFT)"""
+    usage = telemetry.get("usage") or {}
+    fields: Dict[str, Any] = {
+        "model": telemetry.get("model"),
+        "usage_details": {
+            "input": usage.get("input_tokens", 0),
+            "output": usage.get("output_tokens", 0),
+            "total": usage.get("total_tokens", 0),
+        },
+        "metadata": {"usage_estimated": usage.get("estimated", False), "retrieval_ms": telemetry.get("retrieval_ms")},
+    }
+    if started_at and telemetry.get("ttft_ms") is not None:
+        fields["completion_start_time"] = started_at + timedelta(milliseconds=telemetry["ttft_ms"])
+    return fields
 
 
 class RAGChain:
@@ -369,7 +387,7 @@ class RAGChain:
         """Run a coroutine inside a LangFuse trace when tracing is enabled"""
         trace_context = None
         if langfuse_config and langfuse_config.is_enabled():
-            trace_context = langfuse_config.create_trace(name=name, input=trace_input)
+            trace_context = langfuse_config.create_trace(name=name, input=trace_input, model=self.model_name)
 
         if not trace_context:
             return await run()
@@ -377,7 +395,8 @@ class RAGChain:
         with trace_context as trace:
             try:
                 result = await run()
-                trace.update(output=summarize(result))
+                telemetry = result.get("telemetry") if isinstance(result, dict) else None
+                trace.update(output=summarize(result), **(_langfuse_usage(telemetry) if telemetry else {}))
                 return result
             except Exception as e:
                 trace.update(output={"error": str(e)})
@@ -385,14 +404,19 @@ class RAGChain:
 
     async def _stream_traced(self, name: str, trace_input: Dict[str, Any],
                              events: AsyncIterator[Dict[str, Any]]) -> AsyncIterator[Dict[str, Any]]:
-        """Wrap an event stream in a detached LangFuse span, closing it on completion or abort"""
-        span = langfuse_config.start_span(name=name, input=trace_input) if langfuse_config else None
+        """Wrap an event stream in a detached LangFuse generation, closing it on completion or abort.
+
+        The generation records model, token usage and the first-token time, so Langfuse shows
+        cost and time-to-first-token for every streamed answer.
+        """
+        started_at = datetime.now(timezone.utc)
+        span = langfuse_config.start_generation(name=name, input=trace_input, model=self.model_name) if langfuse_config else None
         async with aclosing(events) as stream:
             try:
                 async for event in stream:
                     if span and event["type"] == "done":
                         telemetry = {k: v for k, v in event["telemetry"].items() if k != "system_prompt"}
-                        span.update(output={"telemetry": telemetry})
+                        span.update(output={"telemetry": telemetry}, **_langfuse_usage(telemetry, started_at))
                     yield event
             except BaseException as e:
                 # Includes GeneratorExit/CancelledError when the client aborts

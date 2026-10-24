@@ -60,6 +60,8 @@ class Settings(BaseSettings):
     rate_limit_ai_per_ip_per_minute: int = 60
     rate_limit_uploads_per_hour: int = 20
     rate_limit_uploads_per_ip_per_hour: int = 60
+    # Share rate limits across workers/instances (e.g. redis://host:6379/0); empty = per-process
+    redis_url: str = ""
 
     @property
     def is_production(self) -> bool:

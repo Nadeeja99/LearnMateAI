@@ -32,6 +32,15 @@ async def get_global_analytics():
         raise internal_error("Loading analytics")
 
 
+@router.get("/model-performance")
+async def get_model_performance(days: int = 30):
+    """Aggregate model latency (TTFT) and answer-feedback stats"""
+    try:
+        return services.analytics.get_model_performance(max(1, min(days, 365)))
+    except Exception:
+        raise internal_error("Loading model performance")
+
+
 @router.get("/performance-metrics")
 async def get_performance_metrics(metric_name: Optional[str] = None, days: int = 30):
     """Get performance metrics"""

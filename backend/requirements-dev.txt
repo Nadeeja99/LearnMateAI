@@ -1,4 +1,6 @@
--r requirements.txt
+# Exact runtime versions (same as Render/Docker/CI) + test & lint tools
+-r requirements.lock
+fakeredis==2.40.0
 pytest==9.1.1
 httpx==0.28.1
 pyflakes==4.0.3
