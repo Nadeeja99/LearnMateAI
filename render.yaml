@@ -29,6 +29,9 @@ services:
       # Sessions untouched for this many days are deleted on startup (0 disables cleanup)
       - key: SESSION_TTL_DAYS
         value: 30
+      # One JSON object per log line, each tagged with its request id
+      - key: LOG_FORMAT
+        value: json
       # Comma-separated frontend origins allowed to call the API
       - key: CORS_ORIGINS
         value: https://learnmate-frontend.onrender.com

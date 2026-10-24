@@ -3,14 +3,11 @@ Voice Processing Service for LearnMate AI
 Handles speech-to-text and text-to-speech using OpenAI APIs
 """
 
-import os
 import logging
-import io
 import base64
-import tempfile
-from typing import Optional, Tuple
-import openai
-import requests
+from typing import Optional
+
+from openai import AsyncOpenAI
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +15,8 @@ class VoiceProcessingService:
     """Service for handling voice processing using OpenAI APIs"""
     
     def __init__(self, openai_api_key: str):
-        self.openai_client = openai.OpenAI(api_key=openai_api_key)
+        # Async client: Whisper/TTS calls take seconds and must not block the event loop
+        self.openai_client = AsyncOpenAI(api_key=openai_api_key)
         self.whisper_model = "whisper-1"
         self.tts_model = "tts-1"
         self.tts_voice = "alloy"  # Options: alloy, echo, fable, onyx, nova, shimmer
@@ -34,35 +32,19 @@ class VoiceProcessingService:
             Transcribed text or None if failed
         """
         try:
-            # Decode base64 audio
             audio_bytes = base64.b64decode(audio_data)
             
-            # Create temporary file for audio
-            with tempfile.NamedTemporaryFile(suffix=".webm", delete=False) as temp_file:
-                temp_file.write(audio_bytes)
-                temp_file_path = temp_file.name
+            # Whisper infers the format from the file name, so pass the bytes with a .webm name
+            transcript = await self.openai_client.audio.transcriptions.create(
+                model=self.whisper_model,
+                file=("audio.webm", audio_bytes),
+                language="en"  # Specify language for better accuracy
+            )
             
-            try:
-                # Transcribe using Whisper (it can handle webm format)
-                with open(temp_file_path, "rb") as audio_file:
-                    transcript = self.openai_client.audio.transcriptions.create(
-                        model=self.whisper_model,
-                        file=audio_file,
-                        language="en"  # Specify language for better accuracy
-                    )
-                
-                transcribed_text = transcript.text.strip()
-                logger.info(f"Speech-to-text successful: {transcribed_text[:50]}...")
-                
-                return transcribed_text
-                
-            finally:
-                # Clean up temporary files
-                try:
-                    os.unlink(temp_file_path)
-                except:
-                    pass
-                    
+            transcribed_text = transcript.text.strip()
+            logger.info(f"Speech-to-text successful: {transcribed_text[:50]}...")
+            return transcribed_text
+            
         except Exception as e:
             logger.error(f"Error in speech-to-text: {e}")
             return None
@@ -79,7 +61,7 @@ class VoiceProcessingService:
         """
         try:
             # Generate speech using OpenAI TTS
-            response = self.openai_client.audio.speech.create(
+            response = await self.openai_client.audio.speech.create(
                 model=self.tts_model,
                 voice=self.tts_voice,
                 input=text,
@@ -142,5 +124,3 @@ class VoiceProcessingService:
                 "test_audio_generated": 0
             }
 
-# Global voice processing service (will be initialized in main.py)
-voice_processing_service: Optional[VoiceProcessingService] = None

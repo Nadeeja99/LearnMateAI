@@ -3,8 +3,6 @@ import logging
 import os
 import pickle
 import threading
-import faiss
-import numpy as np
 from typing import List, Dict, Any, Optional
 from langchain_core.documents import Document
 from langchain_openai import OpenAIEmbeddings
@@ -193,16 +191,14 @@ class VectorStore:
                 logger.warning(f"Document '{document_name}' not found in vector store")
                 return
             
-            # Rebuild vector store with remaining documents
             if self.documents:
-                texts = [doc.page_content for doc in self.documents]
-                metadatas = [doc.metadata for doc in self.documents]
-                
-                self.vector_store = FAISS.from_texts(
-                    texts, 
-                    self.embeddings, 
-                    metadatas=metadatas
-                )
+                # Remove only this document's vectors by docstore id. (Rebuilding the index
+                # would re-embed every remaining chunk, which costs an OpenAI call per chunk.)
+                docstore_ids = [
+                    doc_id for doc_id in self.vector_store.index_to_docstore_id.values()
+                    if self.vector_store.docstore.search(doc_id).metadata.get("source") == document_name
+                ]
+                self.vector_store.delete(docstore_ids)
                 
                 # Save updated vector store
                 self.save_vector_store()

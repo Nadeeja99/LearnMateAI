@@ -9,6 +9,7 @@ from langchain_core.documents import Document
 from langchain_core.embeddings import DeterministicFakeEmbedding
 
 from app import main
+from app.services import services
 from app import rag_chain as rag_module
 from app import vector_store as vector_store_module
 from app.conversation_memory import conversation_memory
@@ -24,21 +25,21 @@ BOB = "bbbbbbbb-0000-0000-0000-000000000002"
 def registry(monkeypatch, tmp_path):
     monkeypatch.setattr(vector_store_module, "OpenAIEmbeddings", lambda **kwargs: DeterministicFakeEmbedding(size=16))
     registry = SessionStoreRegistry("test-key", root_dir=str(tmp_path / "sessions"))
-    monkeypatch.setattr(main, "session_stores", registry)
+    monkeypatch.setattr(services, "session_stores", registry)
     return registry
 
 
 @pytest.fixture
 def api(monkeypatch, registry):
     monkeypatch.setattr(rag_module, "learning_analytics", None)
-    monkeypatch.setattr(main, "learning_analytics", None)
-    monkeypatch.setattr(main.rag_chain, "llm", FakeLLM(tokens=("ok",)))
+    monkeypatch.setattr(services, "analytics", None)
+    monkeypatch.setattr(services.rag_chain, "llm", FakeLLM(tokens=("ok",)))
 
     def fake_process(filename, content):
         text = content.decode().removeprefix("%PDF-")
         return [Document(page_content=f"{text} part {i}", metadata={"source": filename, "file_size": len(content), "text_length": len(text)}) for i in range(2)]
 
-    monkeypatch.setattr(main.document_processor, "process_document", fake_process)
+    monkeypatch.setattr(services.document_processor, "process_document", fake_process)
 
     def client_for(session_id):
         return TestClient(main.app, headers={"X-Session-Id": session_id})
@@ -156,7 +157,7 @@ def test_session_ids_never_appear_in_shared_or_semi_public_data(api, monkeypatch
     conversation_id = alice.post("/conversations", json={}).json()["conversation_id"]
     assert ALICE not in conversation_id  # conversation ids surface in /voice/connections
 
-    monkeypatch.setattr(main, "learning_analytics", real_learning_analytics)
+    monkeypatch.setattr(services, "analytics", real_learning_analytics)
     assert alice.post("/analytics/track-quiz", json={"quiz_score": 2, "total_questions": 2, "score_percentage": 100}).status_code == 200
     metrics = TestClient(main.app).get("/analytics/performance-metrics").json()["metrics"]
     assert any(m["metric_name"] == "quiz_score_percentage" for m in metrics)

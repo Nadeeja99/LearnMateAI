@@ -4,13 +4,15 @@ Error handling that never leaks internals to clients.
 - UserFacingError: an expected condition whose message is safe and useful to show
   (bad PDF, file too large, ...). It is an HTTPException, so FastAPI returns it as-is.
 - internal_error(): for everything else. The client gets a generic message plus a short
-  reference id; the full traceback is logged server-side under the same id.
+  reference; the full traceback is logged server-side under the same reference.
 """
 
 import logging
 import uuid
 
 from fastapi import HTTPException
+
+from .logging_setup import request_id_var
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +26,9 @@ class UserFacingError(HTTPException):
 
 
 def new_error_ref() -> str:
-    return uuid.uuid4().hex[:8]
+    """The current request id (so the ref matches the request's log lines), else a fresh id."""
+    request_id = request_id_var.get()
+    return request_id if request_id != "-" else uuid.uuid4().hex[:8]
 
 
 def internal_error(action: str) -> HTTPException:

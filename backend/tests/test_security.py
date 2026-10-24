@@ -9,6 +9,8 @@ from langchain_core.documents import Document
 from langchain_core.embeddings import DeterministicFakeEmbedding
 
 from app import main
+from app.config import DEFAULT_PRODUCTION_ORIGINS, Settings, settings
+from app.services import services
 from app import rag_chain as rag_module
 from app import rate_limit
 from app import vector_store as vector_store_module
@@ -28,10 +30,10 @@ PDF = b"%PDF-1.4 fake"
 def offline_registry(monkeypatch, tmp_path):
     monkeypatch.setattr(vector_store_module, "OpenAIEmbeddings", lambda **kwargs: DeterministicFakeEmbedding(size=16))
     registry = SessionStoreRegistry("test-key", root_dir=str(tmp_path / "sessions"))
-    monkeypatch.setattr(main, "session_stores", registry)
-    monkeypatch.setattr(main, "learning_analytics", None)
+    monkeypatch.setattr(services, "session_stores", registry)
+    monkeypatch.setattr(services, "analytics", None)
     monkeypatch.setattr(
-        main.document_processor,
+        services.document_processor,
         "process_document",
         lambda filename, content: [Document(page_content="text", metadata={"source": filename, "file_size": len(content)})],
     )
@@ -63,7 +65,7 @@ def test_unhandled_errors_keep_cors_headers(monkeypatch):
     def boom(*args, **kwargs):
         raise RuntimeError("kaboom")
 
-    monkeypatch.setattr(main.learning_analytics, "get_global_analytics", boom)
+    monkeypatch.setattr(services.analytics, "get_global_analytics", boom)
     response = TestClient(main.app, raise_server_exceptions=False).get(
         "/analytics/global", headers={"Origin": "http://localhost:8080"}
     )
@@ -89,7 +91,7 @@ def test_truly_unhandled_exceptions_are_caught_inside_cors():
 
 def test_stream_errors_hide_internals(monkeypatch):
     fake = FakeVectorStore()
-    monkeypatch.setattr(main.session_stores, "get", lambda session_id: fake)
+    monkeypatch.setattr(services.session_stores, "get", lambda session_id: fake)
     monkeypatch.setattr(rag_module, "conversation_memory", None)
     monkeypatch.setattr(rag_module, "learning_analytics", None)
 
@@ -98,7 +100,7 @@ def test_stream_errors_hide_internals(monkeypatch):
             raise RuntimeError("sk-live-api-key-leak")
             yield  # pragma: no cover
 
-    monkeypatch.setattr(main.rag_chain, "llm", ExplodingLLM())
+    monkeypatch.setattr(services.rag_chain, "llm", ExplodingLLM())
     body = client().post("/ask/stream", json={"question": "hi"}).text
     assert "sk-live" not in body
     assert "Answer generation failed. Please try again. (ref " in body
@@ -120,14 +122,14 @@ def test_rejects_non_pdf_content_even_with_pdf_extension(offline_registry):
 
 
 def test_rejects_oversized_uploads(offline_registry, monkeypatch):
-    monkeypatch.setattr(main, "MAX_UPLOAD_BYTES", 1024)
+    monkeypatch.setattr(settings, "max_upload_size", 1024)
     response = client().post("/upload", files={"file": ("big.pdf", PDF + b"x" * 200_000, "application/pdf")})
     assert response.status_code == 413
     assert "maximum size" in response.json()["detail"]
 
 
 def test_rejects_declared_oversize_before_reading_body(offline_registry, monkeypatch):
-    monkeypatch.setattr(main, "MAX_UPLOAD_BYTES", 1024)
+    monkeypatch.setattr(settings, "max_upload_size", 1024)
     response = client().post("/upload", content=b"x" * 10, headers={"Content-Length": str(10_000_000), "Content-Type": "multipart/form-data; boundary=x"})
     assert response.status_code == 413
 
@@ -139,7 +141,7 @@ def test_strips_paths_from_filenames(offline_registry):
 
 
 def test_document_count_limit_per_session(offline_registry, monkeypatch):
-    monkeypatch.setattr(main, "MAX_DOCUMENTS_PER_SESSION", 2)
+    monkeypatch.setattr(settings, "max_documents_per_session", 2)
     c = client()
     for name in ("a.pdf", "b.pdf"):
         assert c.post("/upload", files={"file": (name, PDF, "application/pdf")}).status_code == 200
@@ -149,8 +151,8 @@ def test_document_count_limit_per_session(offline_registry, monkeypatch):
 
 
 def test_chunk_limit_per_document(offline_registry, monkeypatch):
-    monkeypatch.setattr(main, "MAX_CHUNKS_PER_DOCUMENT", 1)
-    monkeypatch.setattr(main.document_processor, "process_document", lambda f, c: [Document(page_content="x", metadata={"source": f})] * 3)
+    monkeypatch.setattr(settings, "max_chunks_per_document", 1)
+    monkeypatch.setattr(services.document_processor, "process_document", lambda f, c: [Document(page_content="x", metadata={"source": f})] * 3)
     response = client().post("/upload", files={"file": ("huge.pdf", PDF, "application/pdf")})
     assert response.status_code == 413
     assert offline_registry.get(SESSION).document_summaries() == {}
@@ -172,10 +174,10 @@ def test_sliding_window_expires_hits():
 
 def test_ai_endpoints_are_rate_limited_per_session(monkeypatch):
     monkeypatch.setattr(rate_limit.AI_POLICY, "per_session", SlidingWindowLimiter(2, 60))
-    monkeypatch.setattr(main.session_stores, "get", lambda session_id: FakeVectorStore())
+    monkeypatch.setattr(services.session_stores, "get", lambda session_id: FakeVectorStore())
     monkeypatch.setattr(rag_module, "conversation_memory", None)
     monkeypatch.setattr(rag_module, "learning_analytics", None)
-    monkeypatch.setattr(main.rag_chain, "llm", FakeLLM())
+    monkeypatch.setattr(services.rag_chain, "llm", FakeLLM())
 
     c = client()
     assert [c.post("/ask/stream", json={"question": "q"}).status_code for _ in range(2)] == [200, 200]
@@ -228,12 +230,13 @@ def test_cors_rejects_unknown_origin():
 def test_production_cors_uses_only_configured_origins(monkeypatch):
     monkeypatch.setenv("ENVIRONMENT", "production")
     monkeypatch.setenv("CORS_ORIGINS", "https://app.example.com, https://www.example.com")
-    assert main._cors_origins() == ["https://app.example.com", "https://www.example.com"]
-    monkeypatch.delenv("CORS_ORIGINS")
-    assert main._cors_origins() == main.DEFAULT_PRODUCTION_ORIGINS
+    assert Settings().allowed_origins == ["https://app.example.com", "https://www.example.com"]
+    monkeypatch.setenv("CORS_ORIGINS", "")
+    assert Settings().allowed_origins == DEFAULT_PRODUCTION_ORIGINS
     monkeypatch.setenv("ENVIRONMENT", "development")
     monkeypatch.setenv("CORS_ORIGINS", "http://localhost:9999")
-    assert "http://localhost:8080" in main._cors_origins() and "http://localhost:9999" in main._cors_origins()
+    origins = Settings().allowed_origins
+    assert "http://localhost:8080" in origins and "http://localhost:9999" in origins
 
 
 # ----- headers & 5.7 debug endpoints -----
@@ -252,7 +255,7 @@ def test_debug_endpoints_hidden_by_default():
 
 
 def test_debug_endpoints_can_be_enabled(monkeypatch):
-    monkeypatch.setattr(main, "DEBUG_ENDPOINTS_ENABLED", True)
+    monkeypatch.setattr(settings, "enable_debug_endpoints", True)
     assert TestClient(main.app).get("/voice/connections").status_code == 200
 
 

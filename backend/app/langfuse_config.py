@@ -3,14 +3,11 @@ LangFuse configuration and client setup for LearnMate AI
 Provides observability and tracing for RAG operations
 """
 
-import os
 import logging
 from typing import Optional
 from langfuse import Langfuse
-from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
+from .config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -18,10 +15,10 @@ class LangfuseConfig:
     """LangFuse configuration and client management"""
     
     def __init__(self):
-        self.enabled = os.getenv("LANGFUSE_ENABLED", "false").lower() == "true"
-        self.public_key = os.getenv("LANGFUSE_PUBLIC_KEY")
-        self.secret_key = os.getenv("LANGFUSE_SECRET_KEY")
-        self.host = os.getenv("LANGFUSE_HOST", "https://cloud.langfuse.com")
+        self.enabled = settings.langfuse_enabled
+        self.public_key = settings.langfuse_public_key
+        self.secret_key = settings.langfuse_secret_key
+        self.host = settings.langfuse_host
         
         self.client: Optional[Langfuse] = None
         

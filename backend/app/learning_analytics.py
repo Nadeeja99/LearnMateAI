@@ -1,375 +1,216 @@
 """
 Learning Analytics System for LearnMate AI
-Tracks user progress, learning patterns, and performance metrics
+Tracks user progress, learning patterns, and performance metrics (SQLite-backed)
+
+Progress (totals, streaks, last activity) is derived from the recorded sessions on read,
+rather than kept as mutable counters, so it can't drift out of sync with the history.
 """
 
 import json
-import os
-from datetime import datetime, timedelta
-from typing import List, Dict, Any, Optional
-from dataclasses import dataclass, asdict
-from collections import defaultdict
 import logging
+import os
+import uuid
+from collections import Counter
+from datetime import date, datetime, timedelta
+from typing import Any, Dict, Iterable, List, Optional
+
+from .config import settings
+from .db import Database, from_json, get_database, mark_migrated, to_json
 
 logger = logging.getLogger(__name__)
 
-@dataclass
-class LearningSession:
-    """Individual learning session"""
-    id: str
-    user_id: str
-    session_type: str  # 'upload', 'question', 'summary', 'quiz', 'chat'
-    document_name: Optional[str]
-    duration_seconds: int
-    timestamp: datetime
-    metadata: Dict[str, Any] = None
+SCHEMA = """
+CREATE TABLE IF NOT EXISTS learning_sessions (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    session_type TEXT NOT NULL,
+    document_name TEXT,
+    duration_seconds INTEGER NOT NULL DEFAULT 0,
+    timestamp TEXT NOT NULL,
+    metadata TEXT NOT NULL DEFAULT '{}'
+);
+CREATE INDEX IF NOT EXISTS idx_learning_sessions_user ON learning_sessions (user_id, timestamp);
+CREATE TABLE IF NOT EXISTS performance_metrics (
+    seq INTEGER PRIMARY KEY AUTOINCREMENT,
+    metric_name TEXT NOT NULL,
+    value REAL NOT NULL,
+    timestamp TEXT NOT NULL,
+    context TEXT NOT NULL DEFAULT '{}'
+);
+CREATE INDEX IF NOT EXISTS idx_performance_metrics_time ON performance_metrics (timestamp);
+"""
 
-@dataclass
-class UserProgress:
-    """User learning progress tracking"""
-    user_id: str
-    total_sessions: int
-    total_documents_uploaded: int
-    total_questions_asked: int
-    total_summaries_generated: int
-    total_quizzes_taken: int
-    total_chat_messages: int
-    learning_streak_days: int
-    last_activity: datetime
-    preferred_document_types: List[str] = None
-    learning_patterns: Dict[str, Any] = None
+# "question" is the legacy name for chat turns; voice turns are questions too
+CHAT_TYPES = {"chat", "question"}
+QUESTION_TYPES = CHAT_TYPES | {"voice_chat"}
 
-@dataclass
-class PerformanceMetric:
-    """Performance metric for analytics"""
-    metric_name: str
-    value: float
-    timestamp: datetime
-    context: Dict[str, Any] = None
+
+def learning_streak(active_days: Iterable[date], today: date) -> int:
+    """Consecutive active days ending today (or yesterday, so an unfinished day doesn't reset it)."""
+    days = set(active_days)
+    day = today if today in days else today - timedelta(days=1)
+    streak = 0
+    while day in days:
+        streak += 1
+        day -= timedelta(days=1)
+    return streak
+
+
+def _distributions(rows) -> Dict[str, Dict[str, int]]:
+    session_types, document_types, daily = Counter(), Counter(), Counter()
+    for row in rows:
+        session_types[row["session_type"]] += 1
+        if row["document_name"]:
+            document_types[row["document_name"].rsplit(".", 1)[-1].lower()] += 1
+        daily[row["timestamp"][:10]] += 1
+    return {"session_types": dict(session_types), "document_types": dict(document_types), "daily": dict(sorted(daily.items()))}
+
+
+def _most_common(counts: Dict[str, int]) -> Optional[str]:
+    return max(counts.items(), key=lambda item: item[1])[0] if counts else None
+
 
 class LearningAnalytics:
     """Manages learning analytics and user progress tracking"""
-    
-    def __init__(self, storage_dir: str = "data/analytics"):
-        self.storage_dir = storage_dir
-        self.sessions: List[LearningSession] = []
-        self.user_progress: Dict[str, UserProgress] = {}
-        self.performance_metrics: List[PerformanceMetric] = []
-        self._ensure_storage_dir()
-        self._load_data()
-    
-    def _ensure_storage_dir(self):
-        """Ensure storage directory exists"""
-        os.makedirs(self.storage_dir, exist_ok=True)
-    
-    def _load_data(self):
-        """Load analytics data from storage"""
+
+    def __init__(self, db: Database, legacy_dir: Optional[str] = None):
+        self.db = db
+        with self.db.transaction() as conn:
+            conn.executescript(SCHEMA)
+        if legacy_dir:
+            self._import_legacy_json(legacy_dir)
+
+    def _import_legacy_json(self, legacy_dir: str) -> None:
+        """One-time import of the pre-SQLite JSON files"""
+        sessions_file = os.path.join(legacy_dir, "sessions.json")
+        metrics_file = os.path.join(legacy_dir, "performance_metrics.json")
+        progress_file = os.path.join(legacy_dir, "user_progress.json")  # now derived; nothing to import
         try:
-            # Load sessions
-            sessions_file = os.path.join(self.storage_dir, "sessions.json")
             if os.path.exists(sessions_file):
-                with open(sessions_file, 'r', encoding='utf-8') as f:
-                    sessions_data = json.load(f)
-                    for session_data in sessions_data:
-                        session = LearningSession(
-                            id=session_data['id'],
-                            user_id=session_data['user_id'],
-                            session_type=session_data['session_type'],
-                            document_name=session_data.get('document_name'),
-                            duration_seconds=session_data['duration_seconds'],
-                            timestamp=datetime.fromisoformat(session_data['timestamp']),
-                            metadata=session_data.get('metadata', {})
-                        )
-                        self.sessions.append(session)
-            
-            # Load user progress
-            progress_file = os.path.join(self.storage_dir, "user_progress.json")
-            if os.path.exists(progress_file):
-                with open(progress_file, 'r', encoding='utf-8') as f:
-                    progress_data = json.load(f)
-                    for user_id, user_data in progress_data.items():
-                        progress = UserProgress(
-                            user_id=user_id,
-                            total_sessions=user_data['total_sessions'],
-                            total_documents_uploaded=user_data['total_documents_uploaded'],
-                            total_questions_asked=user_data['total_questions_asked'],
-                            total_summaries_generated=user_data['total_summaries_generated'],
-                            total_quizzes_taken=user_data['total_quizzes_taken'],
-                            total_chat_messages=user_data['total_chat_messages'],
-                            learning_streak_days=user_data['learning_streak_days'],
-                            last_activity=datetime.fromisoformat(user_data['last_activity']),
-                            preferred_document_types=user_data.get('preferred_document_types', []),
-                            learning_patterns=user_data.get('learning_patterns', {})
-                        )
-                        self.user_progress[user_id] = progress
-            
-            # Load performance metrics
-            metrics_file = os.path.join(self.storage_dir, "performance_metrics.json")
+                with open(sessions_file, encoding="utf-8") as f:
+                    sessions = json.load(f)
+                with self.db.transaction() as conn:
+                    conn.executemany(
+                        "INSERT OR IGNORE INTO learning_sessions VALUES (?, ?, ?, ?, ?, ?, ?)",
+                        [(s["id"], s["user_id"], s["session_type"], s.get("document_name"), s.get("duration_seconds", 0),
+                          s["timestamp"], to_json(s.get("metadata"))) for s in sessions],
+                    )
+                mark_migrated(sessions_file)
             if os.path.exists(metrics_file):
-                with open(metrics_file, 'r', encoding='utf-8') as f:
-                    metrics_data = json.load(f)
-                    for metric_data in metrics_data:
-                        metric = PerformanceMetric(
-                            metric_name=metric_data['metric_name'],
-                            value=metric_data['value'],
-                            timestamp=datetime.fromisoformat(metric_data['timestamp']),
-                            context=metric_data.get('context', {})
-                        )
-                        self.performance_metrics.append(metric)
-            
-            logger.info(f"Loaded analytics data: {len(self.sessions)} sessions, {len(self.user_progress)} users, {len(self.performance_metrics)} metrics")
+                with open(metrics_file, encoding="utf-8") as f:
+                    metrics = json.load(f)
+                with self.db.transaction() as conn:
+                    conn.executemany(
+                        "INSERT INTO performance_metrics (metric_name, value, timestamp, context) VALUES (?, ?, ?, ?)",
+                        [(m["metric_name"], m["value"], m["timestamp"], to_json(m.get("context"))) for m in metrics],
+                    )
+                mark_migrated(metrics_file)
+            if os.path.exists(progress_file):
+                mark_migrated(progress_file)
         except Exception as e:
-            logger.error(f"Error loading analytics data: {e}")
-    
-    def _save_data(self):
-        """Save analytics data to storage"""
-        try:
-            # Save sessions
-            sessions_file = os.path.join(self.storage_dir, "sessions.json")
-            sessions_data = []
-            for session in self.sessions:
-                session_dict = asdict(session)
-                session_dict['timestamp'] = session.timestamp.isoformat()
-                sessions_data.append(session_dict)
-            
-            with open(sessions_file, 'w', encoding='utf-8') as f:
-                json.dump(sessions_data, f, indent=2, ensure_ascii=False)
-            
-            # Save user progress
-            progress_file = os.path.join(self.storage_dir, "user_progress.json")
-            progress_data = {}
-            for user_id, progress in self.user_progress.items():
-                progress_dict = asdict(progress)
-                progress_dict['last_activity'] = progress.last_activity.isoformat()
-                progress_data[user_id] = progress_dict
-            
-            with open(progress_file, 'w', encoding='utf-8') as f:
-                json.dump(progress_data, f, indent=2, ensure_ascii=False)
-            
-            # Save performance metrics
-            metrics_file = os.path.join(self.storage_dir, "performance_metrics.json")
-            metrics_data = []
-            for metric in self.performance_metrics:
-                metric_dict = asdict(metric)
-                metric_dict['timestamp'] = metric.timestamp.isoformat()
-                metrics_data.append(metric_dict)
-            
-            with open(metrics_file, 'w', encoding='utf-8') as f:
-                json.dump(metrics_data, f, indent=2, ensure_ascii=False)
-            
-            logger.info("Analytics data saved successfully")
-        except Exception as e:
-            logger.error(f"Error saving analytics data: {e}")
-    
-    def track_session(self, user_id: str, session_type: str, document_name: str = None, 
-                     duration_seconds: int = 0, metadata: Dict[str, Any] = None):
+            logger.error(f"Could not import legacy analytics from {legacy_dir}: {e}")
+
+    def track_session(self, user_id: str, session_type: str, document_name: str = None,
+                      duration_seconds: int = 0, metadata: Dict[str, Any] = None):
         """Track a learning session"""
-        session_id = f"session_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}"
-        
-        session = LearningSession(
-            id=session_id,
-            user_id=user_id,
-            session_type=session_type,
-            document_name=document_name,
-            duration_seconds=duration_seconds,
-            timestamp=datetime.now(),
-            metadata=metadata or {}
+        self.db.execute(
+            "INSERT INTO learning_sessions VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (f"session_{uuid.uuid4().hex}", user_id, session_type, document_name, duration_seconds,
+             datetime.now().isoformat(), to_json(metadata)),
         )
-        
-        self.sessions.append(session)
-        
-        # Update user progress
-        self._update_user_progress(user_id, session_type)
-        
-        self._save_data()
-        logger.info(f"Tracked session: {session_type} for user {user_id}")
-    
-    def _update_user_progress(self, user_id: str, session_type: str):
-        """Update user progress based on session type"""
-        if user_id not in self.user_progress:
-            self.user_progress[user_id] = UserProgress(
-                user_id=user_id,
-                total_sessions=0,
-                total_documents_uploaded=0,
-                total_questions_asked=0,
-                total_summaries_generated=0,
-                total_quizzes_taken=0,
-                total_chat_messages=0,
-                learning_streak_days=0,
-                last_activity=datetime.now()
-            )
-        
-        progress = self.user_progress[user_id]
-        progress.total_sessions += 1
-        progress.last_activity = datetime.now()
-        
-        # Update specific counters
-        if session_type == 'upload':
-            progress.total_documents_uploaded += 1
-        elif session_type == 'question':
-            progress.total_questions_asked += 1
-        elif session_type == 'chat':  # Chat messages are now tracked as "chat"
-            progress.total_chat_messages += 1
-        elif session_type == 'summary':
-            progress.total_summaries_generated += 1
-        elif session_type == 'quiz':
-            progress.total_quizzes_taken += 1
-        
-        # Update learning streak
-        self._update_learning_streak(progress)
-    
-    def _update_learning_streak(self, progress: UserProgress):
-        """Update learning streak based on activity"""
-        now = datetime.now()
-        if progress.last_activity.date() == now.date():
-            # Activity today, check if we should increment streak
-            yesterday = now - timedelta(days=1)
-            if progress.last_activity.date() == yesterday.date():
-                progress.learning_streak_days += 1
-            else:
-                progress.learning_streak_days = 1
-        else:
-            # No activity today, reset streak
-            progress.learning_streak_days = 0
-    
+        logger.info(f"Tracked session: {session_type}")
+
     def get_user_analytics(self, user_id: str) -> Dict[str, Any]:
-        """Get comprehensive analytics for a user"""
-        if user_id not in self.user_progress:
+        """Get comprehensive analytics for a user ({} if they have no activity yet)"""
+        rows = self.db.query("SELECT * FROM learning_sessions WHERE user_id = ? ORDER BY timestamp", (user_id,))
+        if not rows:
             return {}
-        
-        progress = self.user_progress[user_id]
-        user_sessions = [s for s in self.sessions if s.user_id == user_id]
-        
-        # Calculate additional metrics
-        session_types = defaultdict(int)
-        document_types = defaultdict(int)
-        daily_activity = defaultdict(int)
-        
-        for session in user_sessions:
-            session_types[session.session_type] += 1
-            if session.document_name:
-                doc_type = session.document_name.split('.')[-1].lower()
-                document_types[doc_type] += 1
-            daily_activity[session.timestamp.date().isoformat()] += 1
-        
-        # Count "question" sessions as chat messages for backward compatibility
-        if "question" in session_types:
-            progress.total_chat_messages += session_types["question"]
-        
-        # Calculate learning patterns
-        most_active_hour = self._calculate_most_active_hour(user_sessions)
-        preferred_session_type = max(session_types.items(), key=lambda x: x[1])[0] if session_types else None
-        
+
+        dist = _distributions(rows)
+        types = dist["session_types"]
+        hours = Counter(datetime.fromisoformat(r["timestamp"]).hour for r in rows)
+        active_days = {datetime.fromisoformat(r["timestamp"]).date() for r in rows}
+
         return {
             "user_id": user_id,
-            "total_sessions": progress.total_sessions,
-            "total_documents_uploaded": progress.total_documents_uploaded,
-            "total_questions_asked": progress.total_questions_asked,
-            "total_summaries_generated": progress.total_summaries_generated,
-            "total_quizzes_taken": progress.total_quizzes_taken,
-            "total_chat_messages": progress.total_chat_messages,
-            "learning_streak_days": progress.learning_streak_days,
-            "last_activity": progress.last_activity.isoformat(),
-            "session_types_distribution": dict(session_types),
-            "document_types_distribution": dict(document_types),
-            "daily_activity": dict(daily_activity),
+            "total_sessions": len(rows),
+            "total_documents_uploaded": types.get("upload", 0),
+            "total_questions_asked": sum(types.get(t, 0) for t in QUESTION_TYPES),
+            "total_summaries_generated": types.get("summary", 0),
+            "total_quizzes_taken": types.get("quiz", 0),
+            "total_chat_messages": sum(types.get(t, 0) for t in CHAT_TYPES),
+            "learning_streak_days": learning_streak(active_days, date.today()),
+            "last_activity": rows[-1]["timestamp"],
+            "session_types_distribution": types,
+            "document_types_distribution": dist["document_types"],
+            "daily_activity": dist["daily"],
             "learning_patterns": {
-                "most_active_hour": most_active_hour,
-                "preferred_session_type": preferred_session_type,
-                "average_sessions_per_day": len(user_sessions) / max(1, (datetime.now() - progress.last_activity).days + 1)
-            }
+                "most_active_hour": hours.most_common(1)[0][0],
+                "preferred_session_type": _most_common(types),
+                "average_sessions_per_day": len(rows) / len(active_days),
+            },
         }
-    
-    def _calculate_most_active_hour(self, sessions: List[LearningSession]) -> int:
-        """Calculate the hour when user is most active"""
-        hour_counts = defaultdict(int)
-        for session in sessions:
-            hour_counts[session.timestamp.hour] += 1
-        
-        return max(hour_counts.items(), key=lambda x: x[1])[0] if hour_counts else 12
-    
+
     def get_global_analytics(self) -> Dict[str, Any]:
-        """Get global analytics across all users"""
-        total_users = len(self.user_progress)
-        total_sessions = len(self.sessions)
-        
-        if total_sessions == 0:
-            return {"total_users": total_users, "total_sessions": 0}
-        
-        # Calculate global metrics
-        session_types = defaultdict(int)
-        document_types = defaultdict(int)
-        daily_activity = defaultdict(int)
-        
-        for session in self.sessions:
-            session_types[session.session_type] += 1
-            if session.document_name:
-                doc_type = session.document_name.split('.')[-1].lower()
-                document_types[doc_type] += 1
-            daily_activity[session.timestamp.date().isoformat()] += 1
-        
-        # Calculate averages
-        avg_sessions_per_user = total_sessions / max(1, total_users)
-        avg_streak = sum(p.learning_streak_days for p in self.user_progress.values()) / max(1, total_users)
-        
+        """Get global analytics across all users (aggregates only, no user ids)"""
+        rows = self.db.query("SELECT * FROM learning_sessions")
+        users: Dict[str, set] = {}
+        for row in rows:
+            users.setdefault(row["user_id"], set()).add(datetime.fromisoformat(row["timestamp"]).date())
+
+        if not rows:
+            return {"total_users": 0, "total_sessions": 0}
+
+        dist = _distributions(rows)
+        today = date.today()
         return {
-            "total_users": total_users,
-            "total_sessions": total_sessions,
-            "average_sessions_per_user": avg_sessions_per_user,
-            "average_learning_streak": avg_streak,
-            "session_types_distribution": dict(session_types),
-            "document_types_distribution": dict(document_types),
-            "daily_activity": dict(daily_activity),
-            "most_popular_session_type": max(session_types.items(), key=lambda x: x[1])[0] if session_types else None,
-            "most_popular_document_type": max(document_types.items(), key=lambda x: x[1])[0] if document_types else None
+            "total_users": len(users),
+            "total_sessions": len(rows),
+            "average_sessions_per_user": len(rows) / len(users),
+            "average_learning_streak": sum(learning_streak(days, today) for days in users.values()) / len(users),
+            "session_types_distribution": dist["session_types"],
+            "document_types_distribution": dist["document_types"],
+            "daily_activity": dist["daily"],
+            "most_popular_session_type": _most_common(dist["session_types"]),
+            "most_popular_document_type": _most_common(dist["document_types"]),
         }
-    
+
     def add_performance_metric(self, metric_name: str, value: float, context: Dict[str, Any] = None):
         """Add a performance metric"""
-        metric = PerformanceMetric(
-            metric_name=metric_name,
-            value=value,
-            timestamp=datetime.now(),
-            context=context or {}
+        self.db.execute(
+            "INSERT INTO performance_metrics (metric_name, value, timestamp, context) VALUES (?, ?, ?, ?)",
+            (metric_name, value, datetime.now().isoformat(), to_json(context)),
         )
-        
-        self.performance_metrics.append(metric)
-        self._save_data()
         logger.info(f"Added performance metric: {metric_name} = {value}")
-    
+
     def get_performance_metrics(self, metric_name: str = None, days: int = 30) -> List[Dict[str, Any]]:
         """Get performance metrics"""
-        cutoff_date = datetime.now() - timedelta(days=days)
-        
-        filtered_metrics = [
-            metric for metric in self.performance_metrics
-            if metric.timestamp >= cutoff_date and (metric_name is None or metric.metric_name == metric_name)
-        ]
-        
+        cutoff = (datetime.now() - timedelta(days=days)).isoformat()
+        sql = "SELECT * FROM performance_metrics WHERE timestamp >= ?"
+        params: List[Any] = [cutoff]
+        if metric_name:
+            sql += " AND metric_name = ?"
+            params.append(metric_name)
         return [
             {
-                "metric_name": metric.metric_name,
-                "value": metric.value,
-                "timestamp": metric.timestamp.isoformat(),
+                "metric_name": r["metric_name"],
+                "value": r["value"],
+                "timestamp": r["timestamp"],
                 # Metrics are public; user ids are session ids and must not leak (older records stored them)
-                "context": {k: v for k, v in (metric.context or {}).items() if k != "user_id"}
+                "context": {k: v for k, v in from_json(r["context"], {}).items() if k != "user_id"},
             }
-            for metric in filtered_metrics
+            for r in self.db.query(sql + " ORDER BY seq", params)
         ]
-    
+
     def cleanup_old_data(self, days_old: int = 90):
         """Clean up old analytics data"""
-        cutoff_date = datetime.now() - timedelta(days=days_old)
-        
-        old_sessions = [s for s in self.sessions if s.timestamp < cutoff_date]
-        old_metrics = [m for m in self.performance_metrics if m.timestamp < cutoff_date]
-        
-        self.sessions = [s for s in self.sessions if s.timestamp >= cutoff_date]
-        self.performance_metrics = [m for m in self.performance_metrics if m.timestamp >= cutoff_date]
-        
-        if old_sessions or old_metrics:
-            self._save_data()
-            logger.info(f"Cleaned up {len(old_sessions)} old sessions and {len(old_metrics)} old metrics")
+        cutoff = (datetime.now() - timedelta(days=days_old)).isoformat()
+        with self.db.transaction() as conn:
+            sessions = conn.execute("DELETE FROM learning_sessions WHERE timestamp < ?", (cutoff,)).rowcount
+            metrics = conn.execute("DELETE FROM performance_metrics WHERE timestamp < ?", (cutoff,)).rowcount
+        if sessions or metrics:
+            logger.info(f"Cleaned up {sessions} old sessions and {metrics} old metrics")
 
-# Global learning analytics instance
-learning_analytics = LearningAnalytics()
+
+# Global learning analytics instance (shares the app database)
+learning_analytics = LearningAnalytics(get_database(), legacy_dir=os.path.join(settings.data_dir, "analytics"))

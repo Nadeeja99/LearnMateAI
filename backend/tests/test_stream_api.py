@@ -4,6 +4,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app import main
+from app.rag_chain import RAGChain
+from app.services import services
 from app import rag_chain as rag_module
 from app.schemas import QuizGenerationError
 from conftest import FakeLLM, FakeVectorStore
@@ -20,7 +22,7 @@ class EmptyVectorStore(FakeVectorStore):
 @pytest.fixture
 def store(monkeypatch):
     fake = FakeVectorStore()
-    monkeypatch.setattr(main.session_stores, "get", lambda session_id: fake)
+    monkeypatch.setattr(services.session_stores, "get", lambda session_id: fake)
     return fake
 
 
@@ -30,7 +32,7 @@ def client(monkeypatch, store):
     monkeypatch.setattr(rag_module, "learning_analytics", None)
     llm = FakeLLM(tokens=("Hi", " there"), usage={"input_tokens": 10, "output_tokens": 2, "total_tokens": 12})
     for attr in ("llm", "summary_llm", "quiz_llm"):
-        monkeypatch.setattr(main.rag_chain, attr, llm)
+        monkeypatch.setattr(services.rag_chain, attr, llm)
     return TestClient(main.app, headers=SESSION)
 
 
@@ -54,9 +56,11 @@ def test_ask_stream_returns_sse_events(client):
 
 
 def test_ask_stream_validates_before_streaming(client, monkeypatch):
-    assert client.post("/ask/stream", json={"question": "  "}).status_code == 400
+    blank = client.post("/ask/stream", json={"question": "  "})
+    assert blank.status_code == 422
+    assert blank.json()["detail"].startswith("question:")
 
-    monkeypatch.setattr(main.session_stores, "get", lambda session_id: EmptyVectorStore())
+    monkeypatch.setattr(services.session_stores, "get", lambda session_id: EmptyVectorStore())
     response = client.post("/ask/stream", json={"question": "Hello?"})
     assert response.status_code == 400
     assert "No documents" in response.json()["detail"]
@@ -72,7 +76,7 @@ def test_generate_quiz_maps_validation_failure_to_502(client, monkeypatch):
     async def invalid_quiz(*args, **kwargs):
         raise QuizGenerationError("The model returned a quiz that failed validation. Please try again.")
 
-    monkeypatch.setattr(main.RAGChain, "generate_quiz", invalid_quiz)
+    monkeypatch.setattr(RAGChain, "generate_quiz", invalid_quiz)
     response = client.post("/generate-quiz", json={"num_questions": 3})
     assert response.status_code == 502
     assert "failed validation" in response.json()["detail"]

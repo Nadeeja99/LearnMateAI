@@ -2,7 +2,6 @@ import asyncio
 import copy
 import json
 import logging
-import os
 import time
 from contextlib import aclosing
 from dataclasses import dataclass, field
@@ -11,6 +10,7 @@ from typing import List, Dict, Any, Optional, AsyncIterator, Awaitable, Callable
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage
 
+from .config import settings
 from .errors import UserFacingError
 from .schemas import Quiz, QuizGenerationError
 
@@ -30,7 +30,6 @@ except ImportError:
     conversation_memory = None
     learning_analytics = None
 
-DEFAULT_CHAT_MODEL = "gpt-5.4-mini"
 NO_CONTEXT_ANSWER = "I couldn't find relevant information in the uploaded documents to answer your question."
 SUMMARY_QUERY = "summary overview main points key concepts important information"
 QUIZ_QUERY = "facts concepts definitions examples important information"
@@ -56,11 +55,11 @@ class RAGChain:
     """Handle RAG (Retrieval-Augmented Generation) operations"""
 
     def __init__(self, openai_api_key: str, vector_store):
-        self.model_name = os.getenv("OPENAI_CHAT_MODEL", DEFAULT_CHAT_MODEL)
-        self.llm = self._make_llm(openai_api_key, int(os.getenv("OPENAI_MAX_TOKENS", "500")))
-        self.summary_llm = self._make_llm(openai_api_key, int(os.getenv("OPENAI_SUMMARY_MAX_TOKENS", "1500")))
+        self.model_name = settings.openai_chat_model
+        self.llm = self._make_llm(openai_api_key, settings.openai_max_tokens)
+        self.summary_llm = self._make_llm(openai_api_key, settings.openai_summary_max_tokens)
         # 20 questions with explanations need far more than the chat budget
-        self.quiz_llm = self._make_llm(openai_api_key, int(os.getenv("OPENAI_QUIZ_MAX_TOKENS", "3500")))
+        self.quiz_llm = self._make_llm(openai_api_key, settings.openai_quiz_max_tokens)
         self.vector_store = vector_store
 
     def with_store(self, vector_store) -> "RAGChain":

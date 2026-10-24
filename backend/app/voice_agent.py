@@ -3,22 +3,18 @@ Voice Agent System for LearnMate AI
 Handles real-time voice interaction with PDF analysis
 """
 
-import asyncio
 import json
 import logging
 from datetime import datetime
 from typing import Callable, Dict, Any, Optional
-from fastapi import WebSocket, WebSocketDisconnect
-from fastapi.responses import StreamingResponse
-import io
+from fastapi import WebSocket
 import base64
 
 # Import our existing modules
 from .rag_chain import RAGChain
-from .vector_store import VectorStore
 from .conversation_memory import conversation_memory
 from .learning_analytics import learning_analytics
-from .voice_processing import VoiceProcessingService, voice_processing_service
+from .voice_processing import VoiceProcessingService
 
 logger = logging.getLogger(__name__)
 
@@ -281,5 +277,3 @@ class VoiceAgent:
             }
         return None
 
-# Global voice agent instance (will be initialized in main.py)
-voice_agent: Optional[VoiceAgent] = None

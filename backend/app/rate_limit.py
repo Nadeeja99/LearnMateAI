@@ -9,7 +9,6 @@ several workers or instances needs a shared store such as Redis.
 """
 
 import math
-import os
 import threading
 import time
 from collections import defaultdict, deque
@@ -18,6 +17,7 @@ from typing import Callable, Deque, Dict, Optional
 
 from fastapi import Depends, HTTPException, Request
 
+from .config import settings
 from .sessions import require_session_id
 
 
@@ -80,19 +80,15 @@ class RatePolicy:
         self.per_ip.record(client_ip)
 
 
-def _env_int(name: str, default: int) -> int:
-    return int(os.getenv(name, str(default)))
-
-
 AI_POLICY = RatePolicy(
     "AI",
-    per_session=SlidingWindowLimiter(_env_int("RATE_LIMIT_AI_PER_MINUTE", 20), 60),
-    per_ip=SlidingWindowLimiter(_env_int("RATE_LIMIT_AI_PER_IP_PER_MINUTE", 60), 60),
+    per_session=SlidingWindowLimiter(settings.rate_limit_ai_per_minute, 60),
+    per_ip=SlidingWindowLimiter(settings.rate_limit_ai_per_ip_per_minute, 60),
 )
 UPLOAD_POLICY = RatePolicy(
     "upload",
-    per_session=SlidingWindowLimiter(_env_int("RATE_LIMIT_UPLOADS_PER_HOUR", 20), 3600),
-    per_ip=SlidingWindowLimiter(_env_int("RATE_LIMIT_UPLOADS_PER_IP_PER_HOUR", 60), 3600),
+    per_session=SlidingWindowLimiter(settings.rate_limit_uploads_per_hour, 3600),
+    per_ip=SlidingWindowLimiter(settings.rate_limit_uploads_per_ip_per_hour, 3600),
 )
 
 
