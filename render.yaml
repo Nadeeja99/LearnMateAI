@@ -3,10 +3,13 @@ services:
   - type: web
     name: learnmate-backend
     env: python
-    # NOTE: Render only attaches persistent disks to paid instance types. On the free plan
-    # the `disk` below is not available, so uploaded documents, conversations and analytics
-    # are lost on every deploy, restart, or idle spin-down. Use a paid plan (e.g. starter)
-    # or move storage off-box before relying on persistence.
+    # Free plan: no persistent disk, so backend/data (uploaded documents, conversations,
+    # analytics) is reset on every deploy, restart, and idle spin-down (~15 min without traffic).
+    # To keep data: switch to a paid plan (e.g. `plan: starter`) and add
+    #   disk:
+    #     name: backend-storage
+    #     mountPath: /opt/render/project/src/backend/data
+    #     sizeGB: 1
     plan: free
     # requirements.lock pins every transitive package (regenerate with scripts/lock-requirements.sh)
     buildCommand: pip install --upgrade pip && pip install -r backend/requirements.lock
@@ -38,10 +41,6 @@ services:
       # Comma-separated frontend origins allowed to call the API
       - key: CORS_ORIGINS
         value: https://learnmate-frontend.onrender.com
-    disk:
-      name: backend-storage
-      mountPath: /opt/render/project/src/backend/data
-      sizeGB: 1
 
   # Frontend Service
   - type: web
@@ -58,6 +57,8 @@ services:
     envVars:
       - key: VITE_API_URL
         value: https://learnmate-backend-koe5.onrender.com
+      - key: NODE_VERSION
+        value: "22"
     # Security headers. The CSP is the main guard for the session id kept in localStorage:
     # only the app's own bundled scripts can run - no inline or third-party scripts.
     # (next-themes renders an inline <script>, but React-inserted scripts never execute, so it
