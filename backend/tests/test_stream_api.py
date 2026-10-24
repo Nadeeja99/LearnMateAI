@@ -58,7 +58,7 @@ def test_ask_stream_returns_sse_events(client):
 def test_ask_stream_validates_before_streaming(client, monkeypatch):
     blank = client.post("/ask/stream", json={"question": "  "})
     assert blank.status_code == 422
-    assert blank.json()["detail"].startswith("question:")
+    assert blank.json()["detail"].startswith("Question:")
 
     monkeypatch.setattr(services.session_stores, "get", lambda session_id: EmptyVectorStore())
     response = client.post("/ask/stream", json={"question": "Hello?"})

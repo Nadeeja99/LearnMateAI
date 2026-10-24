@@ -1,8 +1,7 @@
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Loader2, FileText, Copy, Download, X } from "lucide-react";
+import { Loader2, FileText, Copy, Download, MessageSquare, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useHotkey } from "@/hooks/use-hotkey";
 import { useAbortController } from "@/hooks/use-abort-controller";
@@ -18,9 +17,11 @@ import InlineError from "@/components/app/InlineError";
 import Kbd from "@/components/app/Kbd";
 import Markdown from "@/components/ai/LazyMarkdown";
 import TelemetryPanel from "@/components/ai/TelemetryPanel";
+import SummarySkeleton from "@/components/app/summary/SummarySkeleton";
 
 interface SummaryViewProps {
   documents: string[];
+  onAskInChat: (question: string) => void;
 }
 
 const SUMMARY_SECTIONS = [
@@ -29,22 +30,7 @@ const SUMMARY_SECTIONS = [
   ["Takeaways", "Essential insights"],
 ];
 
-const SummarySkeleton = () => (
-  <Card className="p-6 sm:p-10" aria-busy="true" aria-label="Generating summary">
-    <p className="mb-6 text-sm text-muted-foreground">Retrieving the most relevant passages…</p>
-    <div className="max-w-prose space-y-8">
-      {[["w-full", "w-11/12", "w-4/5"], ["w-1/3"], ["w-full", "w-10/12", "w-full", "w-2/3"]].map((lines, block) => (
-        <div key={block} className="space-y-3">
-          {lines.map((width, index) => (
-            <Skeleton key={index} className={`${width} ${lines.length === 1 ? "h-5" : "h-4"}`} />
-          ))}
-        </div>
-      ))}
-    </div>
-  </Card>
-);
-
-const SummaryView = ({ documents }: SummaryViewProps) => {
+const SummaryView = ({ documents, onAskInChat }: SummaryViewProps) => {
   const [summary, setSummary] = useState("");
   const [telemetry, setTelemetry] = useState<Telemetry>();
   const [isGenerating, setIsGenerating] = useState(false);
@@ -159,7 +145,10 @@ const SummaryView = ({ documents }: SummaryViewProps) => {
 
           {!isGenerating && (
             <div className="mt-8 flex items-center justify-between border-t pt-6">
-              <Button variant="outline">Chat about this summary</Button>
+              <Button variant="outline" onClick={() => onAskInChat("Based on my documents, explain the key takeaways from the summary in more detail.")}>
+                <MessageSquare />
+                Chat about this summary
+              </Button>
               <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => setSummary("")}>
                 <X />
                 Clear

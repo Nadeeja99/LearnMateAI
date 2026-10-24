@@ -1,14 +1,43 @@
+import { useState } from "react";
 import { Check, Copy, ThumbsDown, ThumbsUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCopy } from "@/hooks/use-copy";
+import { useToast } from "@/hooks/use-toast";
+import API_CONFIG from "@/lib/api";
+import { errorText, requestJson } from "@/lib/http";
 import { cn } from "@/lib/utils";
 import Markdown from "@/components/ai/LazyMarkdown";
 import TelemetryPanel from "@/components/ai/TelemetryPanel";
 import type { Message } from "./types";
 
-export const ChatMessage = ({ message }: { message: Message }) => {
+type Rating = "up" | "down";
+
+/** Thumbs up/down, recorded server-side as an `answer_feedback` metric with the answering model. */
+function useFeedback(conversationId: string | null | undefined, model: string | undefined) {
+  const [rating, setRating] = useState<Rating | null>(null);
+  const { toast } = useToast();
+
+  const rate = async (value: Rating) => {
+    if (rating === value) return;
+    const previous = rating;
+    setRating(value); // optimistic
+    try {
+      await requestJson(API_CONFIG.ENDPOINTS.FEEDBACK, {
+        method: "POST",
+        json: { rating: value, conversation_id: conversationId ?? undefined, model },
+      });
+    } catch (err) {
+      setRating(previous);
+      toast({ title: "Couldn't send feedback", description: errorText(err), variant: "destructive" });
+    }
+  };
+  return { rating, rate };
+}
+
+export const ChatMessage = ({ message, conversationId }: { message: Message; conversationId?: string | null }) => {
   const { copied, copy } = useCopy();
+  const feedback = useFeedback(conversationId, message.telemetry?.model);
   const isUser = message.role === "user";
   const isStreaming = message.status === "streaming";
 
@@ -35,11 +64,25 @@ export const ChatMessage = ({ message }: { message: Message }) => {
                 {copied ? <Check className="!h-3.5 !w-3.5 text-success" /> : <Copy className="!h-3.5 !w-3.5" />}
                 {copied ? "Copied" : "Copy"}
               </Button>
-              <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Helpful">
-                <ThumbsUp className="!h-3.5 !w-3.5" />
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn("h-7 w-7", feedback.rating === "up" && "text-primary")}
+                aria-label="Helpful"
+                aria-pressed={feedback.rating === "up"}
+                onClick={() => feedback.rate("up")}
+              >
+                <ThumbsUp className={cn("!h-3.5 !w-3.5", feedback.rating === "up" && "fill-current")} />
               </Button>
-              <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Not helpful">
-                <ThumbsDown className="!h-3.5 !w-3.5" />
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn("h-7 w-7", feedback.rating === "down" && "text-destructive")}
+                aria-label="Not helpful"
+                aria-pressed={feedback.rating === "down"}
+                onClick={() => feedback.rate("down")}
+              >
+                <ThumbsDown className={cn("!h-3.5 !w-3.5", feedback.rating === "down" && "fill-current")} />
               </Button>
               {message.status === "stopped" && (
                 <span className="rounded-full border px-2 py-0.5 text-[0.6875rem] font-medium">Partial response</span>

@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import API_CONFIG from "@/lib/api";
+import { blobToBase64, pickRecordingMimeType } from "@/lib/audio";
+import { useSpeechPlayback } from "@/hooks/use-speech-playback";
 
 export interface VoiceMessage {
   id: string;
@@ -26,14 +28,13 @@ export function useVoiceAgent() {
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [isListening, setIsListening] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
   const [messages, setMessages] = useState<VoiceMessage[]>([]);
 
   const clientId = useRef(`voice_client_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`).current;
   const websocketRef = useRef<WebSocket | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const { toast } = useToast();
+  const playback = useSpeechPlayback();
 
   // Leaving the view must release the socket, the microphone, and any playing audio
   useEffect(
@@ -44,45 +45,9 @@ export function useVoiceAgent() {
         socket.close();
       }
       mediaRecorderRef.current?.stream.getTracks().forEach((track) => track.stop());
-      audioRef.current?.pause();
-      window.speechSynthesis?.cancel();
     },
     [],
   );
-
-  const speakWithBrowser = (text: string) => {
-    try {
-      const utterance = new SpeechSynthesisUtterance(text || "Response received");
-      utterance.onend = () => setIsSpeaking(false);
-      utterance.onerror = () => setIsSpeaking(false);
-      setIsSpeaking(true);
-      speechSynthesis.speak(utterance);
-    } catch (error) {
-      console.error("Fallback audio also failed:", error);
-      setIsSpeaking(false);
-    }
-  };
-
-  const playAudio = async (base64Audio: string, fallbackText: string) => {
-    try {
-      setIsSpeaking(true);
-      const bytes = Uint8Array.from(atob(base64Audio), (char) => char.charCodeAt(0));
-      const audioUrl = URL.createObjectURL(new Blob([bytes], { type: "audio/mpeg" }));
-      const audio = new Audio(audioUrl);
-      audioRef.current = audio;
-      const finish = () => {
-        setIsSpeaking(false);
-        URL.revokeObjectURL(audioUrl);
-        if (audioRef.current === audio) audioRef.current = null;
-      };
-      audio.onended = finish;
-      audio.onerror = finish;
-      await audio.play();
-    } catch (error) {
-      console.error("Error playing audio:", error);
-      speakWithBrowser(fallbackText);
-    }
-  };
 
   const handleServerMessage = (message: VoiceServerMessage) => {
     if (message.type === "transcribed") {
@@ -109,8 +74,8 @@ export function useVoiceAgent() {
     ]);
 
     if (message.type === "response") {
-      if (message.audio) playAudio(message.audio, message.text);
-      else speakWithBrowser(message.text);
+      if (message.audio) playback.play(message.audio, message.text);
+      else playback.speak(message.text);
     }
   };
 
@@ -129,7 +94,7 @@ export function useVoiceAgent() {
       socket.onclose = () => {
         setIsConnected(false);
         setIsListening(false);
-        setIsSpeaking(false);
+        playback.stop();
         toast({ title: "Disconnected from Voice Agent", description: "Voice chat session ended", variant: "destructive" });
       };
       socket.onerror = (error) => {
@@ -149,18 +114,15 @@ export function useVoiceAgent() {
     websocketRef.current = null;
     setIsConnected(false);
     setIsListening(false);
-    setIsSpeaking(false);
+    playback.stop();
   };
 
-  const sendAudio = (audioBlob: Blob) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64Audio = reader.result?.toString().split(",")[1];
-      if (base64Audio && websocketRef.current) {
-        websocketRef.current.send(JSON.stringify({ type: "voice", audio: base64Audio, timestamp: new Date().toISOString() }));
-      }
-    };
-    reader.readAsDataURL(audioBlob);
+  const sendAudio = async (audioBlob: Blob) => {
+    const audio = await blobToBase64(audioBlob);
+    if (audio && websocketRef.current) {
+      // mime_type lets the server name the file so Whisper decodes Safari's MP4 as well as WebM
+      websocketRef.current.send(JSON.stringify({ type: "voice", audio, mime_type: audioBlob.type, timestamp: new Date().toISOString() }));
+    }
   };
 
   const startListening = async () => {
@@ -173,7 +135,8 @@ export function useVoiceAgent() {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 44100 },
       });
-      const recorder = new MediaRecorder(stream, { mimeType: "audio/webm;codecs=opus" });
+      const mimeType = pickRecordingMimeType();
+      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
       mediaRecorderRef.current = recorder;
 
       const chunks: Blob[] = [];
@@ -181,7 +144,7 @@ export function useVoiceAgent() {
         if (event.data.size > 0) chunks.push(event.data);
       };
       recorder.onstop = () => {
-        sendAudio(new Blob(chunks, { type: "audio/webm" }));
+        sendAudio(new Blob(chunks, { type: recorder.mimeType || mimeType || "audio/webm" }));
         stream.getTracks().forEach((track) => track.stop());
       };
 
@@ -203,13 +166,16 @@ export function useVoiceAgent() {
     );
   };
 
-  /** Stops the spoken reply (audio element or browser speech synthesis). */
-  const stopSpeaking = () => {
-    audioRef.current?.pause();
-    audioRef.current = null;
-    window.speechSynthesis?.cancel();
-    setIsSpeaking(false);
+  return {
+    isConnected,
+    isConnecting,
+    isListening,
+    isSpeaking: playback.isSpeaking,
+    messages,
+    connect,
+    disconnect,
+    startListening,
+    stopListening,
+    stopSpeaking: playback.stop,
   };
-
-  return { isConnected, isConnecting, isListening, isSpeaking, messages, connect, disconnect, startListening, stopListening, stopSpeaking };
 }

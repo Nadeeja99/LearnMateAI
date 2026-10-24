@@ -17,9 +17,10 @@ from .logging_setup import configure_logging, new_request_id, request_id_var
 
 configure_logging(settings.log_level, settings.log_format)
 
-from .api import ai, analytics, conversations, documents, voice  # noqa: E402
+from .api import ai, analytics, conversations, documents, session, voice  # noqa: E402
 from .api.documents import too_large_message  # noqa: E402
 from .errors import new_error_ref  # noqa: E402
+from .models import FIELD_LABELS  # noqa: E402
 from .langfuse_config import langfuse_config  # noqa: E402
 from .services import init_services, services  # noqa: E402
 
@@ -80,9 +81,12 @@ app.add_middleware(
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     """422 with one readable sentence (the frontend shows `detail` as-is)"""
     first = exc.errors()[0] if exc.errors() else {}
-    field = ".".join(str(part) for part in first.get("loc", ()) if part != "body")
+    field = next((str(part) for part in reversed(first.get("loc", ())) if isinstance(part, str) and part != "body"), "")
     message = first.get("msg", "Invalid request")
-    return JSONResponse(status_code=422, content={"detail": f"{field}: {message}" if field else message})
+    if not field:
+        return JSONResponse(status_code=422, content={"detail": message})
+    label = FIELD_LABELS.get(field, field.replace("_", " ").capitalize())
+    return JSONResponse(status_code=422, content={"detail": f"{label}: {message[:1].lower()}{message[1:]}"})
 
 
 @app.exception_handler(Exception)
@@ -93,7 +97,7 @@ async def global_exception_handler(request: Request, exc: Exception):
     return JSONResponse(status_code=500, content={"detail": f"Something went wrong. Please try again. (ref {ref})"})
 
 
-for router in (documents.router, ai.router, conversations.router, analytics.router, voice.router):
+for router in (documents.router, ai.router, conversations.router, analytics.router, session.router, voice.router):
     app.include_router(router)
 
 

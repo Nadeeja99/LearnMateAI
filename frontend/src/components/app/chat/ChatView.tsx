@@ -20,9 +20,11 @@ const SAMPLE_QUESTIONS = [
 
 interface ChatViewProps {
   documents: string[];
+  /** A question prepared by another view; placed in the composer (not sent) when its id changes */
+  draft?: { text: string; id: number } | null;
 }
 
-const ChatView = ({ documents }: ChatViewProps) => {
+const ChatView = ({ documents, draft }: ChatViewProps) => {
   const [input, setInput] = useState("");
   const [showConversations, setShowConversations] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -32,6 +34,12 @@ const ChatView = ({ documents }: ChatViewProps) => {
     useChatSession(documents, { onSettled: () => composerRef.current?.focus() });
 
   const currentTitle = history.conversations.find((conv) => conv.id === currentConversationId)?.title;
+
+  useEffect(() => {
+    if (!draft) return;
+    setInput(draft.text);
+    composerRef.current?.focus();
+  }, [draft]);
 
   useEffect(() => {
     const viewport = scrollRef.current?.querySelector("[data-radix-scroll-area-viewport]");
@@ -118,7 +126,7 @@ const ChatView = ({ documents }: ChatViewProps) => {
                 message.status === "streaming" && !message.content ? (
                   <TypingIndicator key={message.id} />
                 ) : (
-                  <ChatMessage key={message.id ?? index} message={message} />
+                  <ChatMessage key={message.id ?? index} message={message} conversationId={currentConversationId} />
                 ),
               )}
               {failure && (

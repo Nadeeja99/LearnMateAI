@@ -5,10 +5,10 @@ from typing import Optional
 from fastapi import APIRouter, Depends
 
 from ..errors import internal_error
-from ..models import TrackQuizRequest
+from ..models import FeedbackRequest, TrackQuizRequest
 from ..services import services
 from ..sessions import require_session_id
-from .deps import require_self
+from .deps import require_own_conversation, require_self
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 
@@ -39,6 +39,22 @@ async def get_performance_metrics(metric_name: Optional[str] = None, days: int =
         return {"metrics": services.analytics.get_performance_metrics(metric_name, days), "metric_name": metric_name, "days": days}
     except Exception:
         raise internal_error("Loading performance metrics")
+
+
+@router.post("/feedback")
+async def record_feedback(body: FeedbackRequest, session_id: str = Depends(require_session_id)):
+    """Thumbs up/down on an AI answer, recorded as an `answer_feedback` metric (+1 / -1)"""
+    if body.conversation_id:
+        require_own_conversation(body.conversation_id, session_id)
+    try:
+        services.analytics.add_performance_metric(
+            metric_name="answer_feedback",
+            value=1 if body.rating == "up" else -1,
+            context={"rating": body.rating, "model": body.model},
+        )
+        return {"message": "Thanks for the feedback"}
+    except Exception:
+        raise internal_error("Recording feedback")
 
 
 @router.post("/track-quiz")

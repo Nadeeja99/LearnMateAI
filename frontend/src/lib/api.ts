@@ -23,6 +23,9 @@ export const API_CONFIG = {
     ANALYTICS_GLOBAL: `${API_BASE_URL}/analytics/global`,
     ANALYTICS_PERFORMANCE: `${API_BASE_URL}/analytics/performance-metrics`,
     TRACK_QUIZ: `${API_BASE_URL}/analytics/track-quiz`,
+    FEEDBACK: `${API_BASE_URL}/analytics/feedback`,
+    CONFIG: `${API_BASE_URL}/config`,
+    SESSION: `${API_BASE_URL}/session`,
     // WebSockets can't carry custom headers, so the session id travels as a query param
     VOICE_WS: (clientId: string) => `${WS_BASE_URL}/voice/ws/${clientId}?session_id=${encodeURIComponent(getSessionId())}`,
     VOICE_STATUS: `${API_BASE_URL}/voice/status`,

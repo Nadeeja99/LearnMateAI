@@ -13,6 +13,17 @@ const generateId = (): string => {
   return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
 };
 
+/** Replace the session id with a fresh one (after the server has erased the old session's data). */
+export function resetSessionId(): string {
+  cached = generateId();
+  try {
+    localStorage.setItem(STORAGE_KEY, cached);
+  } catch {
+    // Storage blocked: the new id lasts for this page load
+  }
+  return cached;
+}
+
 export function getSessionId(): string {
   if (cached) return cached;
   try {

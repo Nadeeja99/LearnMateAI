@@ -58,7 +58,7 @@ class VoiceAgent:
             del self.conversation_contexts[client_id]
         logger.info(f"Voice agent disconnected: {client_id}")
     
-    async def process_voice_message(self, client_id: str, audio_data: str, message_type: str = "voice"):
+    async def process_voice_message(self, client_id: str, audio_data: str, mime_type: Optional[str] = None):
         """Process incoming voice message"""
         try:
             if client_id not in self.active_connections:
@@ -68,7 +68,7 @@ class VoiceAgent:
             logger.info(f"Processing voice message for client: {client_id}")
             
             # Convert base64 audio to text using OpenAI Whisper
-            transcribed_text = await self.speech_to_text(audio_data)
+            transcribed_text = await self.speech_to_text(audio_data, mime_type)
             
             logger.info(f"Transcribed text: '{transcribed_text}'")
             
@@ -118,14 +118,14 @@ class VoiceAgent:
                 "error"
             )
     
-    async def speech_to_text(self, audio_data: str) -> str:
+    async def speech_to_text(self, audio_data: str, mime_type: Optional[str] = None) -> str:
         """Convert audio to text using OpenAI Whisper API"""
         try:
             if not self.voice_processing:
                 logger.error("Voice processing service not initialized")
                 return None
             
-            transcribed_text = await self.voice_processing.speech_to_text(audio_data)
+            transcribed_text = await self.voice_processing.speech_to_text(audio_data, mime_type)
             
             if transcribed_text:
                 logger.info(f"Successfully transcribed: {transcribed_text[:50]}...")
@@ -248,7 +248,7 @@ class VoiceAgent:
             if message_type == "voice":
                 audio_data = message.get("audio")
                 if audio_data:
-                    await self.process_voice_message(client_id, audio_data)
+                    await self.process_voice_message(client_id, audio_data, message.get("mime_type"))
             elif message_type == "text":
                 text = message.get("text")
                 if text:

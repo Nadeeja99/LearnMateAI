@@ -164,6 +164,10 @@ class ConversationMemory:
         self.db.execute("DELETE FROM conversations WHERE id = ?", (conversation_id,))
         logger.info(f"Deleted conversation {conversation_id}")
 
+    def delete_user_conversations(self, user_id: str) -> int:
+        """Delete every conversation (and its messages) owned by user_id"""
+        return self.db.execute("DELETE FROM conversations WHERE user_id = ?", (user_id,)).rowcount
+
     def cleanup_old_conversations(self, days_old: int = 30):
         """Clean up conversations not updated in days_old days"""
         cutoff = (datetime.now() - timedelta(days=days_old)).isoformat()

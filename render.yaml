@@ -64,7 +64,7 @@ services:
     headers:
       - path: /*
         name: Content-Security-Policy
-        value: "default-src 'self'; script-src 'self' 'sha256-S2r3pSKm6jdDnftV06b4jMah4fNHdi1l9KhwcJRQCuc='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' https://learnmate-backend-koe5.onrender.com wss://learnmate-backend-koe5.onrender.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+        value: "default-src 'self'; script-src 'self' 'sha256-S2r3pSKm6jdDnftV06b4jMah4fNHdi1l9KhwcJRQCuc='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' https://learnmate-backend-koe5.onrender.com wss://learnmate-backend-koe5.onrender.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
       - path: /*
         name: X-Content-Type-Options
         value: nosniff

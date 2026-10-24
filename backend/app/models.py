@@ -35,6 +35,28 @@ class CreateConversationRequest(RequestModel):
     document_context: List[DocumentName] = Field(default_factory=list, max_length=100)
 
 
+class FeedbackRequest(RequestModel):
+    rating: Literal["up", "down"]
+    conversation_id: Optional[str] = Field(None, max_length=100)
+    model: Optional[str] = Field(None, max_length=100)
+
+
+# Human-readable names for validation messages ("Number of questions: ..." not "num_questions: ...")
+FIELD_LABELS = {
+    "question": "Question",
+    "conversation_id": "Conversation",
+    "document_name": "Document",
+    "num_questions": "Number of questions",
+    "difficulty": "Difficulty",
+    "title": "Title",
+    "document_context": "Documents",
+    "rating": "Rating",
+    "quiz_score": "Quiz score",
+    "total_questions": "Total questions",
+    "score_percentage": "Score",
+}
+
+
 class TrackQuizRequest(RequestModel):
     quiz_score: int = Field(0, ge=0)
     total_questions: int = Field(1, ge=1, le=100)

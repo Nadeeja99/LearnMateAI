@@ -35,10 +35,10 @@ def client():
 @pytest.mark.parametrize(
     "path, body, expected",
     [
-        ("/generate-quiz", {"num_questions": 25}, "num_questions: Input should be less than or equal to 20"),
-        ("/generate-quiz", {"difficulty": "impossible"}, "difficulty: Input should be 'easy', 'medium' or 'hard'"),
-        ("/ask/stream", {}, "question: Field required"),
-        ("/ask/stream", {"question": "x" * 4001}, "question: String should have at most 4000 characters"),
+        ("/generate-quiz", {"num_questions": 25}, "Number of questions: input should be less than or equal to 20"),
+        ("/generate-quiz", {"difficulty": "impossible"}, "Difficulty: input should be 'easy', 'medium' or 'hard'"),
+        ("/ask/stream", {}, "Question: field required"),
+        ("/ask/stream", {"question": "x" * 4001}, "Question: string should have at most 4000 characters"),
     ],
 )
 def test_invalid_bodies_get_a_readable_422(path, body, expected):
@@ -236,3 +236,13 @@ def test_upload_parsing_and_embedding_run_off_the_event_loop(monkeypatch, tmp_pa
     response = client().post("/upload", files={"file": ("n.pdf", b"%PDF-1", "application/pdf")})
     assert response.status_code == 200
     assert threads["parse_on_event_loop"] is False
+
+
+@pytest.mark.parametrize(
+    "mime, filename",
+    [("audio/webm;codecs=opus", "audio.webm"), ("audio/mp4", "audio.mp4"), ("audio/ogg; codecs=opus", "audio.ogg"), (None, "audio.webm"), ("video/evil", "audio.webm")],
+)
+def test_audio_filename_follows_recorder_format(mime, filename):
+    from app.voice_processing import audio_filename
+    assert audio_filename(mime) == filename
+

@@ -11,6 +11,23 @@ from openai import AsyncOpenAI
 
 logger = logging.getLogger(__name__)
 
+# Whisper infers the audio format from the upload's file extension. Browsers record different
+# containers (Chrome/Firefox: WebM/Opus, Safari: MP4/AAC), so map the recorder's MIME type.
+AUDIO_EXTENSIONS = {
+    "audio/webm": "webm",
+    "audio/mp4": "mp4",
+    "audio/x-m4a": "m4a",
+    "audio/aac": "m4a",
+    "audio/mpeg": "mp3",
+    "audio/ogg": "ogg",
+    "audio/wav": "wav",
+}
+
+
+def audio_filename(mime_type: Optional[str]) -> str:
+    base = (mime_type or "").split(";")[0].strip().lower()
+    return f"audio.{AUDIO_EXTENSIONS.get(base, 'webm')}"
+
 class VoiceProcessingService:
     """Service for handling voice processing using OpenAI APIs"""
     
@@ -21,7 +38,7 @@ class VoiceProcessingService:
         self.tts_model = "tts-1"
         self.tts_voice = "alloy"  # Options: alloy, echo, fable, onyx, nova, shimmer
         
-    async def speech_to_text(self, audio_data: str) -> Optional[str]:
+    async def speech_to_text(self, audio_data: str, mime_type: Optional[str] = None) -> Optional[str]:
         """
         Convert audio to text using OpenAI Whisper API
         
@@ -34,10 +51,9 @@ class VoiceProcessingService:
         try:
             audio_bytes = base64.b64decode(audio_data)
             
-            # Whisper infers the format from the file name, so pass the bytes with a .webm name
             transcript = await self.openai_client.audio.transcriptions.create(
                 model=self.whisper_model,
-                file=("audio.webm", audio_bytes),
+                file=(audio_filename(mime_type), audio_bytes),
                 language="en"  # Specify language for better accuracy
             )
             

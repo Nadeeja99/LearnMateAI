@@ -175,6 +175,10 @@ class LearningAnalytics:
             "most_popular_document_type": _most_common(dist["document_types"]),
         }
 
+    def delete_user_data(self, user_id: str) -> int:
+        """Delete a user's learning sessions (metrics hold no user ids)"""
+        return self.db.execute("DELETE FROM learning_sessions WHERE user_id = ?", (user_id,)).rowcount
+
     def add_performance_metric(self, metric_name: str, value: float, context: Dict[str, Any] = None):
         """Add a performance metric"""
         self.db.execute(
