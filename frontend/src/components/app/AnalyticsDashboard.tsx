@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import API_CONFIG from "@/lib/api";
+import PageHeader from "@/components/app/PageHeader";
+import IconBadge from "@/components/app/IconBadge";
 import { 
   BarChart3, 
   TrendingUp, 
@@ -13,7 +14,8 @@ import {
   Clock,
   Target,
   RefreshCw,
-  Activity
+  Activity,
+  type LucideIcon
 } from "lucide-react";
 
 interface UserAnalytics {
@@ -48,6 +50,56 @@ interface GlobalAnalytics {
   most_popular_document_type: string;
 }
 
+const formatLabel = (key: string) => {
+  const label = key.replace(/_/g, " ");
+  return label.charAt(0).toUpperCase() + label.slice(1);
+};
+
+const StatCard = ({ title, value, icon, subtitle }: { title: string; value: string | number; icon: LucideIcon; subtitle?: string }) => (
+  <Card className="p-5">
+    <div className="flex items-start justify-between gap-3">
+      <div className="min-w-0">
+        <p className="truncate text-sm text-muted-foreground">{title}</p>
+        <p className="mt-2 text-2xl font-semibold tabular-nums tracking-tight">{value}</p>
+        {subtitle && <p className="mt-1 truncate text-xs text-muted-foreground">{subtitle}</p>}
+      </div>
+      <IconBadge icon={icon} size="sm" />
+    </div>
+  </Card>
+);
+
+const BarList = ({ title, rows }: { title: string; rows: [string, number][] }) => {
+  const maxValue = Math.max(1, ...rows.map(([, value]) => value));
+  return (
+    <Card className="p-5 sm:p-6">
+      <h3 className="mb-5 text-sm font-medium">{title}</h3>
+      {rows.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No activity yet</p>
+      ) : (
+        <div className="space-y-3">
+          {rows.map(([label, value]) => (
+            <div key={label} className="flex items-center gap-3 text-sm">
+              <span className="w-24 shrink-0 truncate capitalize text-muted-foreground">{label}</span>
+              <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+                <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${(value / maxValue) * 100}%` }} />
+              </div>
+              <span className="w-8 shrink-0 text-right font-medium tabular-nums">{value}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </Card>
+  );
+};
+
+const activityRows = (data: Record<string, number>): [string, number][] =>
+  Object.entries(data)
+    .slice(-7) // Last 7 days
+    .map(([date, value]) => [new Date(date).toLocaleDateString(undefined, { month: "short", day: "numeric" }), value]);
+
+const distributionRows = (data: Record<string, number>): [string, number][] =>
+  Object.entries(data).map(([key, value]) => [formatLabel(key), value]);
+
 const AnalyticsDashboard = () => {
   const [userAnalytics, setUserAnalytics] = useState<UserAnalytics | null>(null);
   const [globalAnalytics, setGlobalAnalytics] = useState<GlobalAnalytics | null>(null);
@@ -81,297 +133,93 @@ const AnalyticsDashboard = () => {
     }
   };
 
-  const StatCard = ({ 
-    title, 
-    value, 
-    icon: Icon, 
-    color = "primary",
-    subtitle 
-  }: {
-    title: string;
-    value: string | number;
-    icon: any;
-    color?: string;
-    subtitle?: string;
-  }) => (
-    <Card className="p-4 sm:p-6">
-      <div className="flex items-center justify-between">
-        <div className="flex-1 min-w-0">
-          <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">{title}</p>
-          <p className="text-lg sm:text-2xl font-bold">{value}</p>
-          {subtitle && <p className="text-xs text-muted-foreground mt-1 truncate">{subtitle}</p>}
-        </div>
-        <div className={`p-2 sm:p-3 rounded-lg bg-${color}/10 flex-shrink-0 ml-2`}>
-          <Icon className={`h-4 w-4 sm:h-6 sm:w-6 text-${color}`} />
-        </div>
-      </div>
-    </Card>
-  );
-
-  const ActivityChart = ({ data, title }: { data: Record<string, number>; title: string }) => {
-    const maxValue = Math.max(...Object.values(data));
-    const entries = Object.entries(data).slice(-7); // Last 7 days
-
-    return (
-      <Card className="p-4 sm:p-6">
-        <h3 className="font-semibold mb-4 text-sm sm:text-base">{title}</h3>
-        <div className="space-y-2 sm:space-y-3">
-          {entries.map(([date, value]) => (
-            <div key={date} className="flex items-center gap-2 sm:gap-3">
-              <span className="text-xs sm:text-sm w-16 sm:w-20 text-muted-foreground flex-shrink-0">
-                {new Date(date).toLocaleDateString()}
-              </span>
-              <div className="flex-1 bg-muted rounded-full h-2">
-                <div
-                  className="bg-primary h-2 rounded-full transition-all"
-                  style={{ width: `${(value / maxValue) * 100}%` }}
-                />
-              </div>
-              <span className="text-xs sm:text-sm font-medium w-6 sm:w-8 flex-shrink-0">{value}</span>
-            </div>
-          ))}
-        </div>
-      </Card>
-    );
-  };
-
-  const DistributionChart = ({ data, title }: { data: Record<string, number>; title: string }) => {
-    const total = Object.values(data).reduce((sum, val) => sum + val, 0);
-    
-    return (
-      <Card className="p-4 sm:p-6">
-        <h3 className="font-semibold mb-4 text-sm sm:text-base">{title}</h3>
-        <div className="space-y-2 sm:space-y-3">
-          {Object.entries(data).map(([key, value]) => (
-            <div key={key} className="flex items-center justify-between gap-2">
-              <span className="text-xs sm:text-sm capitalize flex-1 min-w-0 truncate">{key.replace('_', ' ')}</span>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <div className="w-16 sm:w-20 bg-muted rounded-full h-2">
-                  <div
-                    className="bg-primary h-2 rounded-full"
-                    style={{ width: `${(value / total) * 100}%` }}
-                  />
-                </div>
-                <span className="text-xs sm:text-sm font-medium w-6 sm:w-8">{value}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </Card>
-    );
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex flex-col h-[calc(100vh-12rem)] sm:h-[calc(100vh-10rem)]">
-        <div className="mb-4 sm:mb-6">
-          <h2 className="text-2xl sm:text-3xl font-bold mb-2">Learning Analytics Dashboard</h2>
-          <p className="text-muted-foreground text-sm sm:text-base">Loading your learning insights...</p>
-        </div>
-        <div className="flex items-center justify-center flex-1">
-          <RefreshCw className="h-6 w-6 sm:h-8 sm:w-8 animate-spin text-primary" />
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex flex-col h-[calc(100vh-12rem)] sm:h-[calc(100vh-10rem)]">
-      {/* Header */}
-      <div className="mb-4 sm:mb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-2">
-          <h2 className="text-2xl sm:text-3xl font-bold">Learning Analytics Dashboard</h2>
-          <Button onClick={loadAnalytics} variant="outline" size="sm" className="w-full sm:w-auto">
-            <RefreshCw className="h-4 w-4 mr-2" />
+    <div>
+      <PageHeader
+        title="Learning analytics"
+        description={isLoading ? "Loading your learning insights…" : "Track your learning progress and insights"}
+        actions={
+          <Button onClick={loadAnalytics} variant="outline" size="sm" disabled={isLoading}>
+            <RefreshCw className={isLoading ? "animate-spin" : undefined} />
             Refresh
           </Button>
-        </div>
-        <p className="text-muted-foreground text-sm sm:text-base">Track your learning progress and insights</p>
+        }
+      />
+
+      <div className="mb-8 inline-flex rounded-lg border p-0.5" role="tablist">
+        {(["user", "global"] as const).map((tab) => (
+          <button
+            key={tab}
+            role="tab"
+            aria-selected={activeTab === tab}
+            onClick={() => setActiveTab(tab)}
+            className={`rounded-md px-3.5 py-1.5 text-sm transition-colors ${
+              activeTab === tab ? "bg-accent font-medium text-foreground" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {tab === "user" ? "Your progress" : "Global insights"}
+          </button>
+        ))}
       </div>
 
-      {/* Tab Navigation */}
-      <div className="flex gap-2 mb-4 sm:mb-6 flex-wrap">
-        <Button
-          variant={activeTab === "user" ? "default" : "outline"}
-          onClick={() => setActiveTab("user")}
-          className="text-xs sm:text-sm"
-        >
-          Your Progress
-        </Button>
-        <Button
-          variant={activeTab === "global" ? "default" : "outline"}
-          onClick={() => setActiveTab("global")}
-        >
-          Global Insights
-        </Button>
-      </div>
+      {activeTab === "user" && userAnalytics && (
+        <div className="space-y-6">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <StatCard title="Total sessions" value={userAnalytics.total_sessions} icon={Activity} subtitle="All learning activities" />
+            <StatCard title="Learning streak" value={`${userAnalytics.learning_streak_days} days`} icon={TrendingUp} subtitle="Current streak" />
+            <StatCard title="Documents uploaded" value={userAnalytics.total_documents_uploaded} icon={FileText} subtitle="PDF documents" />
+            <StatCard title="Questions asked" value={userAnalytics.total_questions_asked} icon={MessageSquare} subtitle="AI interactions" />
+          </div>
 
-      <ScrollArea className="flex-1">
-        {activeTab === "user" && userAnalytics && (
-          <div className="space-y-6">
-            {/* Key Metrics */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-              <StatCard
-                title="Total Sessions"
-                value={userAnalytics.total_sessions}
-                icon={Activity}
-                subtitle="All learning activities"
-              />
-              <StatCard
-                title="Learning Streak"
-                value={`${userAnalytics.learning_streak_days} days`}
-                icon={TrendingUp}
-                color="green"
-                subtitle="Current streak"
-              />
-              <StatCard
-                title="Documents Uploaded"
-                value={userAnalytics.total_documents_uploaded}
-                icon={FileText}
-                color="blue"
-                subtitle="PDF documents"
-              />
-              <StatCard
-                title="Questions Asked"
-                value={userAnalytics.total_questions_asked}
-                icon={MessageSquare}
-                color="purple"
-                subtitle="AI interactions"
-              />
-            </div>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <StatCard title="Summaries generated" value={userAnalytics.total_summaries_generated} icon={Brain} />
+            <StatCard title="Quizzes taken" value={userAnalytics.total_quizzes_taken} icon={Target} />
+            <StatCard title="Chat messages" value={userAnalytics.total_chat_messages} icon={MessageSquare} />
+          </div>
 
-            {/* Additional Metrics */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-              <StatCard
-                title="Summaries Generated"
-                value={userAnalytics.total_summaries_generated}
-                icon={Brain}
-                color="orange"
-              />
-              <StatCard
-                title="Quizzes Taken"
-                value={userAnalytics.total_quizzes_taken}
-                icon={Target}
-                color="red"
-              />
-              <StatCard
-                title="Chat Messages"
-                value={userAnalytics.total_chat_messages}
-                icon={MessageSquare}
-                color="indigo"
-              />
-            </div>
-
-            {/* Learning Patterns */}
-            <Card className="p-6">
-              <h3 className="font-semibold mb-4">Learning Patterns</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="text-center">
-                  <Clock className="h-8 w-8 mx-auto mb-2 text-primary" />
-                  <p className="text-sm text-muted-foreground">Most Active Hour</p>
-                  <p className="font-semibold">{userAnalytics.learning_patterns.most_active_hour}:00</p>
-                </div>
-                <div className="text-center">
-                  <Target className="h-8 w-8 mx-auto mb-2 text-primary" />
-                  <p className="text-sm text-muted-foreground">Preferred Activity</p>
-                  <p className="font-semibold capitalize">{userAnalytics.learning_patterns.preferred_session_type.replace('_', ' ')}</p>
-                </div>
-                <div className="text-center">
-                  <TrendingUp className="h-8 w-8 mx-auto mb-2 text-primary" />
-                  <p className="text-sm text-muted-foreground">Avg Sessions/Day</p>
-                  <p className="font-semibold">{userAnalytics.learning_patterns.average_sessions_per_day.toFixed(1)}</p>
+          <Card className="grid gap-6 p-6 sm:grid-cols-3">
+            {[
+              { icon: Clock, label: "Most active hour", value: `${userAnalytics.learning_patterns.most_active_hour}:00` },
+              { icon: Target, label: "Preferred activity", value: formatLabel(userAnalytics.learning_patterns.preferred_session_type) },
+              { icon: TrendingUp, label: "Avg sessions / day", value: userAnalytics.learning_patterns.average_sessions_per_day.toFixed(1) },
+            ].map(({ icon: Icon, label, value }) => (
+              <div key={label} className="flex items-center gap-3">
+                <Icon className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <p className="text-sm text-muted-foreground">{label}</p>
+                  <p className="font-medium capitalize">{value}</p>
                 </div>
               </div>
-            </Card>
+            ))}
+          </Card>
 
-            {/* Charts */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <ActivityChart 
-                data={userAnalytics.daily_activity} 
-                title="Daily Activity (Last 7 Days)" 
-              />
-              <DistributionChart 
-                data={userAnalytics.session_types_distribution} 
-                title="Session Types Distribution" 
-              />
-            </div>
+          <div className="grid gap-4 lg:grid-cols-2">
+            <BarList title="Daily activity · last 7 days" rows={activityRows(userAnalytics.daily_activity)} />
+            <BarList title="Session types" rows={distributionRows(userAnalytics.session_types_distribution)} />
           </div>
-        )}
+        </div>
+      )}
 
-        {activeTab === "global" && globalAnalytics && (
-          <div className="space-y-6">
-            {/* Global Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <StatCard
-                title="Total Users"
-                value={globalAnalytics.total_users}
-                icon={Users}
-                subtitle="Platform users"
-              />
-              <StatCard
-                title="Total Sessions"
-                value={globalAnalytics.total_sessions}
-                icon={Activity}
-                subtitle="All activities"
-              />
-              <StatCard
-                title="Avg Sessions/User"
-                value={globalAnalytics.average_sessions_per_user.toFixed(1)}
-                icon={TrendingUp}
-                color="green"
-                subtitle="User engagement"
-              />
-              <StatCard
-                title="Avg Learning Streak"
-                value={`${globalAnalytics.average_learning_streak.toFixed(1)} days`}
-                icon={Target}
-                color="blue"
-                subtitle="Platform average"
-              />
-            </div>
-
-            {/* Popular Content */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card className="p-6">
-                <h3 className="font-semibold mb-4">Most Popular Activity</h3>
-                <div className="flex items-center gap-3">
-                  <Activity className="h-8 w-8 text-primary" />
-                  <div>
-                    <p className="font-semibold capitalize">
-                      {globalAnalytics.most_popular_session_type.replace('_', ' ')}
-                    </p>
-                    <p className="text-sm text-muted-foreground">Most used feature</p>
-                  </div>
-                </div>
-              </Card>
-              <Card className="p-6">
-                <h3 className="font-semibold mb-4">Most Popular Document Type</h3>
-                <div className="flex items-center gap-3">
-                  <FileText className="h-8 w-8 text-primary" />
-                  <div>
-                    <p className="font-semibold uppercase">
-                      {globalAnalytics.most_popular_document_type}
-                    </p>
-                    <p className="text-sm text-muted-foreground">Most uploaded format</p>
-                  </div>
-                </div>
-              </Card>
-            </div>
-
-            {/* Global Charts */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <ActivityChart 
-                data={globalAnalytics.daily_activity} 
-                title="Global Daily Activity (Last 7 Days)" 
-              />
-              <DistributionChart 
-                data={globalAnalytics.session_types_distribution} 
-                title="Global Session Types" 
-              />
-            </div>
+      {activeTab === "global" && globalAnalytics && (
+        <div className="space-y-6">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <StatCard title="Total users" value={globalAnalytics.total_users} icon={Users} subtitle="Platform users" />
+            <StatCard title="Total sessions" value={globalAnalytics.total_sessions} icon={Activity} subtitle="All activities" />
+            <StatCard title="Avg sessions / user" value={globalAnalytics.average_sessions_per_user.toFixed(1)} icon={TrendingUp} subtitle="User engagement" />
+            <StatCard title="Avg learning streak" value={`${globalAnalytics.average_learning_streak.toFixed(1)} days`} icon={Target} subtitle="Platform average" />
           </div>
-        )}
-      </ScrollArea>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <StatCard title="Most popular activity" value={formatLabel(globalAnalytics.most_popular_session_type)} icon={BarChart3} subtitle="Most used feature" />
+            <StatCard title="Most popular document type" value={globalAnalytics.most_popular_document_type.toUpperCase()} icon={FileText} subtitle="Most uploaded format" />
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            <BarList title="Global daily activity · last 7 days" rows={activityRows(globalAnalytics.daily_activity)} />
+            <BarList title="Global session types" rows={distributionRows(globalAnalytics.session_types_distribution)} />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -3,18 +3,17 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import API_CONFIG from "@/lib/api";
+import PageHeader from "@/components/app/PageHeader";
+import IconBadge from "@/components/app/IconBadge";
 import { 
   Mic, 
   MicOff, 
-  Volume2, 
   VolumeX, 
   Phone, 
   PhoneOff,
   MessageSquare,
   Loader2,
-  Play,
-  Pause,
-  Settings
+  Pause
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -25,6 +24,14 @@ interface VoiceMessage {
   audio?: string;
   timestamp: string;
   isPlaying?: boolean;
+}
+
+/** Server -> client WebSocket message (see backend voice_agent.py) */
+interface VoiceServerMessage {
+  type: "welcome" | "response" | "transcribed" | "error" | "pong";
+  text: string;
+  audio?: string | null;
+  timestamp?: string;
 }
 
 interface VoiceChatProps {
@@ -75,7 +82,7 @@ const VoiceChat = ({ documents }: VoiceChatProps) => {
       };
       
       websocketRef.current.onmessage = (event) => {
-        const message = JSON.parse(event.data);
+        const message: VoiceServerMessage = JSON.parse(event.data);
         handleVoiceMessage(message);
       };
       
@@ -121,7 +128,7 @@ const VoiceChat = ({ documents }: VoiceChatProps) => {
     setIsSpeaking(false);
   };
 
-  const handleVoiceMessage = (message: any) => {
+  const handleVoiceMessage = (message: VoiceServerMessage) => {
     
     if (message.type === "transcribed") {
       // Update the last user message with the actual transcribed text
@@ -302,64 +309,57 @@ const VoiceChat = ({ documents }: VoiceChatProps) => {
   };
 
 
+  const statusText = isListening
+    ? "Listening… speak now"
+    : isSpeaking
+    ? "Playing response…"
+    : isConnected
+    ? "Ready to listen"
+    : "Connect to start voice chat";
+
   return (
-    <div className="flex flex-col h-[calc(100vh-12rem)] sm:h-[calc(100vh-10rem)]">
-      {/* Header */}
-      <div className="mb-4 sm:mb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-2">
-          <h2 className="text-2xl sm:text-3xl font-bold">Voice Learning Assistant</h2>
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className={`px-3 py-1 rounded-full text-sm ${
-              isConnected 
-                ? "bg-green-100 text-green-800 border border-green-200" 
-                : "bg-gray-100 text-gray-800 border border-gray-200"
-            }`}>
-              {isConnected ? "🟢 Connected" : "🔴 Disconnected"}
-            </div>
+    <div className="flex h-view flex-col">
+      <PageHeader
+        title="Voice assistant"
+        description={
+          documents.length > 0 ? (
+            <>
+              Talking about <span className="font-medium text-foreground">{documents[documents.length - 1]}</span>
+            </>
+          ) : (
+            "Upload a document to start voice chat"
+          )
+        }
+        actions={
+          <>
+            <span className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium text-muted-foreground">
+              <span className={`h-1.5 w-1.5 rounded-full ${isConnected ? "bg-success" : "bg-muted-foreground/50"}`} />
+              {isConnected ? "Connected" : "Disconnected"}
+            </span>
             {isConnected && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={disconnectFromVoiceAgent}
-                className="text-xs sm:text-sm"
-              >
-                <PhoneOff className="h-4 w-4 mr-1 sm:mr-2" />
-                <span className="hidden sm:inline">Disconnect</span>
+              <Button variant="outline" size="sm" onClick={disconnectFromVoiceAgent}>
+                <PhoneOff />
+                Disconnect
               </Button>
             )}
-          </div>
-        </div>
-        
-        {documents.length > 0 ? (
-          <p className="text-muted-foreground">
-            Voice chatting about: <span className="text-primary font-medium">{documents[documents.length - 1]}</span>
-          </p>
-        ) : (
-          <p className="text-muted-foreground">Upload a document to start voice chat</p>
-        )}
-      </div>
+          </>
+        }
+      />
 
       {/* Voice Controls */}
-      <Card className="p-4 sm:p-6 mb-4">
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
+      <Card className="mb-4 p-6">
+        <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
           {!isConnected ? (
-            <Button
-              onClick={connectToVoiceAgent}
-              disabled={isConnecting}
-              size="lg"
-              className="px-6 sm:px-8 w-full sm:w-auto"
-            >
+            <Button onClick={connectToVoiceAgent} disabled={isConnecting} size="lg" className="w-full sm:w-auto">
               {isConnecting ? (
                 <>
-                  <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                  <span className="hidden sm:inline">Connecting...</span>
-                  <span className="sm:hidden">Connecting</span>
+                  <Loader2 className="animate-spin" />
+                  Connecting…
                 </>
               ) : (
                 <>
-                  <Phone className="h-5 w-5 mr-2" />
-                  <span className="hidden sm:inline">Connect to Voice Agent</span>
-                  <span className="sm:hidden">Connect</span>
+                  <Phone />
+                  Connect to voice agent
                 </>
               )}
             </Button>
@@ -370,91 +370,78 @@ const VoiceChat = ({ documents }: VoiceChatProps) => {
                 disabled={isSpeaking}
                 variant={isListening ? "destructive" : "default"}
                 size="lg"
-                className="px-6 sm:px-8 w-full sm:w-auto"
+                className="w-full sm:w-auto"
               >
                 {isListening ? (
                   <>
-                    <MicOff className="h-5 w-5 mr-2" />
-                    <span className="hidden sm:inline">Stop Listening</span>
-                    <span className="sm:hidden">Stop</span>
+                    <MicOff />
+                    Stop listening
                   </>
                 ) : (
                   <>
-                    <Mic className="h-5 w-5 mr-2" />
-                    <span className="hidden sm:inline">Start Speaking</span>
-                    <span className="sm:hidden">Speak</span>
+                    <Mic />
+                    Start speaking
                   </>
                 )}
               </Button>
-              
+
               <Button
                 onClick={() => setIsSpeaking(false)}
                 disabled={!isSpeaking}
                 variant="outline"
                 size="lg"
-                className="px-6 sm:px-8 w-full sm:w-auto"
+                className="w-full sm:w-auto"
               >
                 {isSpeaking ? (
                   <>
-                    <Pause className="h-5 w-5 mr-2" />
-                    <span className="hidden sm:inline">Stop Speaking</span>
-                    <span className="sm:hidden">Stop</span>
+                    <Pause />
+                    Stop speaking
                   </>
                 ) : (
                   <>
-                    <VolumeX className="h-5 w-5 mr-2" />
-                    <span className="hidden sm:inline">Muted</span>
-                    <span className="sm:hidden">Mute</span>
+                    <VolumeX />
+                    Muted
                   </>
                 )}
               </Button>
             </>
           )}
         </div>
-        
-        <div className="mt-4 text-center">
-          <p className="text-sm text-muted-foreground">
-            {isListening && "🎤 Listening... Speak now"}
-            {isSpeaking && "🔊 Playing response..."}
-            {!isListening && !isSpeaking && isConnected && "Ready to listen"}
-            {!isConnected && "Connect to start voice chat"}
-          </p>
-        </div>
+
+        <p className="mt-4 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+          {(isListening || isSpeaking) && <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />}
+          {statusText}
+        </p>
       </Card>
 
       {/* Messages */}
-      <Card className="flex-1 mb-4 overflow-hidden">
-        <ScrollArea className="h-full p-6" ref={scrollRef}>
+      <Card className="mb-4 flex-1 overflow-hidden">
+        <ScrollArea className="h-full" ref={scrollRef}>
           {messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full space-y-4">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-                <MessageSquare className="h-8 w-8 text-white" />
-              </div>
-              <div className="text-center">
-                <h3 className="text-xl font-semibold mb-2">Start Voice Chat</h3>
-                <p className="text-muted-foreground">
+            <div className="flex min-h-full flex-col items-center justify-center gap-4 px-6 py-12 text-center">
+              <IconBadge icon={MessageSquare} size="lg" tone="primary" />
+              <div className="space-y-1">
+                <h3 className="text-lg font-semibold">Start a voice chat</h3>
+                <p className="max-w-sm text-sm text-muted-foreground">
                   Connect to the voice agent and start speaking to analyze your documents
                 </p>
               </div>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-4 p-4 sm:p-6">
               {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex ${message.type === "user" ? "justify-end" : "justify-start"}`}
-                >
+                <div key={message.id} className={`flex ${message.type === "user" ? "justify-end" : "justify-start"} animate-fade-up`}>
                   <div
-                    className={`max-w-[80%] rounded-lg p-4 ${
+                    className={`max-w-[85%] px-4 py-2.5 ${
                       message.type === "user"
-                        ? "bg-primary text-primary-foreground"
+                        ? "rounded-2xl rounded-br-md bg-primary text-primary-foreground"
                         : message.type === "system"
-                        ? "bg-blue-100 text-blue-900"
-                        : "bg-muted"
+                        ? "rounded-lg border border-dashed text-sm text-muted-foreground"
+                        : "rounded-2xl rounded-bl-md border bg-muted/40"
                     }`}
                   >
-                    <p className="whitespace-pre-wrap">{message.text}</p>
-                    <div className="text-xs opacity-70 mt-2">
+                    <p className="whitespace-pre-wrap text-[0.9375rem] leading-relaxed">{message.text}</p>
+                    <div className={`mt-1.5 text-xs ${message.type === "user" ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
                       {new Date(message.timestamp).toLocaleTimeString()}
                     </div>
                   </div>
@@ -465,30 +452,15 @@ const VoiceChat = ({ documents }: VoiceChatProps) => {
         </ScrollArea>
       </Card>
 
-      {/* Quick Actions */}
+      {/* Suggested prompts */}
       {isConnected && (
-        <div className="flex gap-2 justify-center flex-wrap">
-          <p className="text-sm text-muted-foreground w-full text-center mb-2">
-            💡 Click "Start Speaking" and say these questions:
-          </p>
-          <div className="flex gap-2 flex-wrap justify-center">
-            {[
-              "What are the main topics?",
-              "Explain this concept",
-              "Give me a summary",
-              "Create a quiz"
-            ].map((text) => (
-              <Button
-                key={text}
-                variant="outline"
-                size="sm"
-                disabled
-                className="opacity-60"
-              >
-                {text}
-              </Button>
-            ))}
-          </div>
+        <div className="flex flex-wrap items-center justify-center gap-2 text-xs text-muted-foreground">
+          <span>Try saying:</span>
+          {["What are the main topics?", "Explain this concept", "Give me a summary", "Create a quiz"].map((text) => (
+            <span key={text} className="rounded-full border px-3 py-1">
+              {text}
+            </span>
+          ))}
         </div>
       )}
     </div>

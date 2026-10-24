@@ -4,9 +4,11 @@ import { Card } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import { Loader2, HelpCircle, CheckCircle, XCircle, RotateCcw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import API_CONFIG from "@/lib/api";
+import PageHeader from "@/components/app/PageHeader";
 
 interface QuizViewProps {
   documents: string[];
@@ -154,36 +156,26 @@ const QuizView = ({ documents }: QuizViewProps) => {
 
   const getScoreColor = () => {
     const percentage = getScorePercentage();
-    if (percentage >= 80) return "text-green-600";
-    if (percentage >= 60) return "text-yellow-600";
-    return "text-red-600";
+    if (percentage >= 80) return "text-success";
+    if (percentage >= 60) return "text-warning";
+    return "text-destructive";
   };
 
   if (quizCompleted) {
     return (
-      <div className="max-w-4xl mx-auto p-4 sm:p-6">
-        <Card className="p-6 sm:p-8 text-center">
-          <div className="mb-6">
-            <div className="text-4xl sm:text-6xl mb-4">🎉</div>
-            <h2 className="text-2xl sm:text-3xl font-bold mb-2">Quiz Completed!</h2>
-            <p className="text-gray-600 text-sm sm:text-base">Here's how you did</p>
+      <div className="mx-auto max-w-2xl">
+        <Card className="px-6 py-12 text-center sm:px-10 animate-fade-up">
+          <p className="text-sm font-medium text-muted-foreground">Quiz completed</p>
+          <div className={`mt-4 text-6xl font-semibold tabular-nums tracking-tight ${getScoreColor()}`}>
+            {getScorePercentage()}%
           </div>
-          
-          <div className="mb-8">
-            <div className={`text-6xl font-bold mb-2 ${getScoreColor()}`}>
-              {getScorePercentage()}%
-            </div>
-            <p className="text-xl text-gray-600">
-              {score} out of {questions.length} correct
-            </p>
-          </div>
-          
-          <div className="flex gap-4 justify-center">
-            <Button onClick={handleRetake} variant="outline" size="lg">
-              <RotateCcw className="w-4 h-4 mr-2" />
-              Take Another Quiz
-            </Button>
-          </div>
+          <p className="mt-3 text-muted-foreground">
+            {score} out of {questions.length} correct
+          </p>
+          <Button onClick={handleRetake} variant="outline" size="lg" className="mt-10">
+            <RotateCcw />
+            Take another quiz
+          </Button>
         </Card>
       </div>
     );
@@ -191,175 +183,127 @@ const QuizView = ({ documents }: QuizViewProps) => {
 
   if (questions.length === 0) {
     return (
-      <div className="max-w-4xl mx-auto p-4 sm:p-6">
-        <Card className="p-6 sm:p-8">
-          <div className="text-center mb-6 sm:mb-8">
-            <HelpCircle className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 text-blue-500" />
-            <h2 className="text-xl sm:text-2xl font-bold mb-2">Generate Quiz</h2>
-            <p className="text-gray-600 text-sm sm:text-base">
-              Create a quiz from your uploaded documents to test your knowledge
-            </p>
+      <div className="mx-auto max-w-2xl">
+        <PageHeader title="Generate a quiz" description="Test your knowledge with questions drawn from your uploaded documents" />
+        <Card className="space-y-8 p-6 sm:p-8">
+          <div className="space-y-4">
+            <div className="flex items-baseline justify-between">
+              <Label className="text-sm font-medium">Number of questions</Label>
+              <span className="text-sm font-medium tabular-nums">{numQuestions[0]}</span>
+            </div>
+            <Slider value={numQuestions} onValueChange={setNumQuestions} max={20} min={1} step={1} />
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>1</span>
+              <span>20</span>
+            </div>
           </div>
 
-          <div className="space-y-6">
-            <div>
-              <Label className="text-base font-medium">Number of Questions</Label>
-              <div className="mt-2">
-                <Slider
-                  value={numQuestions}
-                  onValueChange={setNumQuestions}
-                  max={20}
-                  min={1}
-                  step={1}
-                  className="w-full"
-                />
-                <div className="flex justify-between text-sm text-gray-500 mt-1">
-                  <span>1</span>
-                  <span className="font-medium">{numQuestions[0]} questions</span>
-                  <span>20</span>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <Label className="text-base font-medium">Difficulty Level</Label>
-              <RadioGroup
-                value={difficulty}
-                onValueChange={setDifficulty}
-                className="flex gap-6 mt-2"
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="easy" id="easy" />
-                  <Label htmlFor="easy">Easy</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="medium" id="medium" />
-                  <Label htmlFor="medium">Medium</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="hard" id="hard" />
-                  <Label htmlFor="hard">Hard</Label>
-                </div>
-              </RadioGroup>
-            </div>
-
-            <Button
-              onClick={handleGenerate}
-              disabled={isGenerating}
-              className="w-full"
-              size="lg"
-            >
-              {isGenerating ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Generating Quiz...
-                </>
-              ) : (
-                "Generate Quiz"
-              )}
-            </Button>
+          <div className="space-y-3">
+            <Label className="text-sm font-medium">Difficulty</Label>
+            <RadioGroup value={difficulty} onValueChange={setDifficulty} className="grid grid-cols-3 gap-2">
+              {["easy", "medium", "hard"].map((level) => (
+                <Label
+                  key={level}
+                  htmlFor={level}
+                  className={`flex cursor-pointer items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm capitalize transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring ${
+                    difficulty === level ? "border-primary bg-primary/5 text-foreground" : "text-muted-foreground hover:bg-accent/60"
+                  }`}
+                >
+                  <RadioGroupItem value={level} id={level} className="sr-only" />
+                  {level}
+                </Label>
+              ))}
+            </RadioGroup>
           </div>
+
+          <Button onClick={handleGenerate} disabled={isGenerating} className="w-full" size="lg">
+            {isGenerating ? (
+              <>
+                <Loader2 className="animate-spin" />
+                Generating quiz…
+              </>
+            ) : (
+              <>
+                <HelpCircle />
+                Generate quiz
+              </>
+            )}
+          </Button>
         </Card>
       </div>
     );
   }
 
   const currentQ = questions[currentQuestion];
-  const isCorrect = currentQ.userAnswer === currentQ.correct_answer;
+
+  const optionClass = (key: string) => {
+    if (!showAnswer) {
+      return currentQ.userAnswer === key
+        ? "border-primary bg-primary/5"
+        : "hover:border-foreground/20 hover:bg-accent/40";
+    }
+    if (key === currentQ.correct_answer) return "border-success/50 bg-success/10";
+    if (key === currentQ.userAnswer) return "border-destructive/50 bg-destructive/10";
+    return "opacity-60";
+  };
 
   return (
-    <div className="max-w-4xl mx-auto p-4 sm:p-6">
-      <Card className="p-4 sm:p-6">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+    <div className="mx-auto max-w-2xl">
+      <Card className="p-6 sm:p-8">
+        <div className="mb-6 flex items-end justify-between gap-4">
           <div>
-            <h2 className="text-xl sm:text-2xl font-bold">Quiz</h2>
-            <p className="text-gray-600 text-sm sm:text-base">
+            <p className="text-sm text-muted-foreground">
               Question {currentQuestion + 1} of {questions.length}
             </p>
+            <h2 className="mt-1 text-lg font-semibold">Quiz</h2>
           </div>
-          <div className="text-left sm:text-right">
-            <div className="text-sm text-gray-500">Score</div>
-            <div className="text-lg sm:text-xl font-bold">{score}/{questions.length}</div>
-          </div>
-        </div>
-
-        <div className="mb-6">
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${((currentQuestion + 1) / questions.length) * 100}%` }}
-            ></div>
+          <div className="text-right">
+            <p className="text-sm text-muted-foreground">Score</p>
+            <p className="mt-1 text-lg font-semibold tabular-nums">
+              {score}/{questions.length}
+            </p>
           </div>
         </div>
 
-        <div className="mb-8">
-          <h3 className="text-xl font-semibold mb-6">{currentQ.question}</h3>
+        <Progress value={((currentQuestion + 1) / questions.length) * 100} className="mb-8 h-1.5" />
 
-          <RadioGroup
-            value={currentQ.userAnswer || ""}
-            onValueChange={handleAnswer}
-            disabled={showAnswer}
-          >
-            {Object.entries(currentQ.options).map(([key, value]) => (
-              <div key={key} className="flex items-center space-x-3 mb-3">
-                <RadioGroupItem
-                  value={key}
-                  id={`option-${key}`}
-                  className={
-                    showAnswer
-                      ? key === currentQ.correct_answer
-                        ? "text-green-600 border-green-600"
-                        : key === currentQ.userAnswer && key !== currentQ.correct_answer
-                        ? "text-red-600 border-red-600"
-                        : ""
-                      : ""
-                  }
-                />
-                <Label
-                  htmlFor={`option-${key}`}
-                  className={`flex-1 cursor-pointer p-3 rounded-lg border transition-colors ${
-                    showAnswer
-                      ? key === currentQ.correct_answer
-                        ? "bg-green-50 border-green-200 text-gray-900"
-                        : key === currentQ.userAnswer && key !== currentQ.correct_answer
-                        ? "bg-red-50 border-red-200 text-gray-900"
-                        : "bg-gray-50 text-gray-700"
-                      : "text-white hover:bg-gray-700 hover:text-white"
-                  }`}
-                >
-                  <span className="font-medium mr-2">{key}.</span>
-                  {value}
-                  {showAnswer && key === currentQ.correct_answer && (
-                    <CheckCircle className="w-5 h-5 inline ml-2 text-green-600" />
-                  )}
-                  {showAnswer && key === currentQ.userAnswer && key !== currentQ.correct_answer && (
-                    <XCircle className="w-5 h-5 inline ml-2 text-red-600" />
-                  )}
-                </Label>
-              </div>
-            ))}
-          </RadioGroup>
+        <h3 className="mb-6 text-lg font-medium leading-snug sm:text-xl">{currentQ.question}</h3>
 
-          {showAnswer && (
-            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-              <h4 className="font-semibold mb-2">Explanation:</h4>
-              <p className="text-gray-700">{currentQ.explanation}</p>
-            </div>
-          )}
-        </div>
-
-        <div className="flex gap-4 pt-4">
-          {!showAnswer ? (
-            <Button
-              onClick={handleSubmit}
-              disabled={!currentQ.userAnswer}
-              className="flex-1"
+        <RadioGroup value={currentQ.userAnswer || ""} onValueChange={handleAnswer} disabled={showAnswer} className="gap-2.5">
+          {Object.entries(currentQ.options).map(([key, value]) => (
+            <Label
+              key={key}
+              htmlFor={`option-${key}`}
+              className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 text-[0.9375rem] font-normal leading-relaxed transition-colors ${optionClass(key)}`}
             >
-              Submit Answer
+              <RadioGroupItem value={key} id={`option-${key}`} className="mt-0.5" />
+              <span className="flex-1">
+                <span className="mr-2 font-medium">{key}.</span>
+                {value}
+              </span>
+              {showAnswer && key === currentQ.correct_answer && <CheckCircle className="h-5 w-5 shrink-0 text-success" />}
+              {showAnswer && key === currentQ.userAnswer && key !== currentQ.correct_answer && (
+                <XCircle className="h-5 w-5 shrink-0 text-destructive" />
+              )}
+            </Label>
+          ))}
+        </RadioGroup>
+
+        {showAnswer && (
+          <div className="mt-6 rounded-lg border bg-muted/40 p-4 animate-fade-up">
+            <h4 className="text-sm font-medium">Explanation</h4>
+            <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{currentQ.explanation}</p>
+          </div>
+        )}
+
+        <div className="mt-8">
+          {!showAnswer ? (
+            <Button onClick={handleSubmit} disabled={!currentQ.userAnswer} className="w-full" size="lg">
+              Submit answer
             </Button>
           ) : (
-            <Button onClick={handleNext} className="flex-1">
-              {currentQuestion < questions.length - 1 ? "Next Question" : "Finish Quiz"}
+            <Button onClick={handleNext} className="w-full" size="lg">
+              {currentQuestion < questions.length - 1 ? "Next question" : "Finish quiz"}
             </Button>
           )}
         </div>

@@ -3,9 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Copy, ThumbsUp, ThumbsDown, Sparkles, Loader2, MessageSquare, Plus, History } from "lucide-react";
+import { Send, Copy, ThumbsUp, ThumbsDown, Sparkles, Loader2, Plus, History, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import API_CONFIG from "@/lib/api";
+import PageHeader from "@/components/app/PageHeader";
+import IconBadge from "@/components/app/IconBadge";
 
 interface Message {
   id: string;
@@ -13,7 +15,7 @@ interface Message {
   content: string;
   sources?: string[];
   timestamp: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 }
 
 interface Conversation {
@@ -206,89 +208,63 @@ const ChatView = ({ documents }: ChatViewProps) => {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-12rem)] sm:h-[calc(100vh-10rem)]">
-      {/* Header */}
-      <div className="mb-4 sm:mb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-2">
-          <h2 className="text-2xl sm:text-3xl font-bold">Chat with Your Documents</h2>
-          <div className="flex gap-2 flex-wrap">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowConversations(!showConversations)}
-              className="text-xs sm:text-sm"
-            >
-              <History className="h-4 w-4 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">Conversations</span>
-              <span className="sm:hidden">Chats</span>
-              ({conversations.length})
+    <div className="flex h-view flex-col">
+      <PageHeader
+        title="Chat with your documents"
+        description={
+          documents.length > 0 ? (
+            <>
+              Chatting about <span className="font-medium text-foreground">{documents[documents.length - 1]}</span>
+              {currentConversationId && (
+                <span className="ml-2 text-muted-foreground">· Conversation {currentConversationId.split('_').slice(-1)[0]}</span>
+              )}
+            </>
+          ) : (
+            "Upload a document to start chatting"
+          )
+        }
+        actions={
+          <>
+            <Button variant="outline" size="sm" onClick={() => setShowConversations(!showConversations)}>
+              <History />
+              History
+              <span className="text-muted-foreground">{conversations.length}</span>
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => createNewConversation(true)}
-              className="text-xs sm:text-sm"
-            >
-              <Plus className="h-4 w-4 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">New Chat</span>
-              <span className="sm:hidden">New</span>
+            <Button variant="outline" size="sm" onClick={() => createNewConversation(true)}>
+              <Plus />
+              New chat
             </Button>
-          </div>
-        </div>
-        
-        {currentConversationId && (
-          <div className="flex items-center gap-2 mb-2">
-            <MessageSquare className="h-4 w-4 text-primary" />
-            <span className="text-sm text-muted-foreground">
-              Active conversation: {currentConversationId.split('_').slice(-1)[0]}
-            </span>
-          </div>
-        )}
-        
-        {documents.length > 0 ? (
-          <p className="text-muted-foreground">
-            Chatting about: <span className="text-primary font-medium">{documents[documents.length - 1]}</span>
-          </p>
-        ) : (
-          <p className="text-muted-foreground">Upload a document to start chatting</p>
-        )}
-      </div>
+          </>
+        }
+      />
 
-      {/* Conversations Sidebar */}
+      {/* Conversations */}
       {showConversations && (
-        <Card className="mb-4 p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold">Previous Conversations</h3>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowConversations(false)}
-            >
-              ×
+        <Card className="mb-4 p-4 animate-fade-up">
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-sm font-medium">Previous conversations</h3>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowConversations(false)} aria-label="Close history">
+              <X />
             </Button>
           </div>
           <ScrollArea className="h-40">
-            <div className="space-y-2">
+            <div className="space-y-1 pr-3">
               {conversations.map((conv) => (
-                <div
+                <button
                   key={conv.id}
-                  className={`p-3 rounded-lg border cursor-pointer transition-colors ${
-                    conv.id === currentConversationId
-                      ? "bg-primary/10 border-primary"
-                      : "hover:bg-muted"
+                  className={`w-full rounded-md px-3 py-2 text-left transition-colors ${
+                    conv.id === currentConversationId ? "bg-accent" : "hover:bg-accent/60"
                   }`}
                   onClick={() => loadConversation(conv.id)}
                 >
-                  <div className="font-medium text-sm truncate">{conv.title}</div>
+                  <div className="truncate text-sm font-medium">{conv.title}</div>
                   <div className="text-xs text-muted-foreground">
-                    {conv.message_count} messages • {new Date(conv.updated_at).toLocaleDateString()}
+                    {conv.message_count} messages · {new Date(conv.updated_at).toLocaleDateString()}
                   </div>
-                </div>
+                </button>
               ))}
               {conversations.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  No previous conversations found
-                </p>
+                <p className="py-4 text-center text-sm text-muted-foreground">No previous conversations found</p>
               )}
             </div>
           </ScrollArea>
@@ -296,85 +272,74 @@ const ChatView = ({ documents }: ChatViewProps) => {
       )}
 
       {/* Messages */}
-      <Card className="flex-1 mb-4 overflow-hidden">
-        <ScrollArea className="h-full p-4 sm:p-6" ref={scrollRef}>
+      <Card className="mb-4 flex-1 overflow-hidden">
+        <ScrollArea className="h-full" ref={scrollRef}>
           {messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full space-y-6 sm:space-y-8">
-              <div className="text-center space-y-3 sm:space-y-4">
-                <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center mx-auto">
-                  <Sparkles className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-lg sm:text-xl font-semibold mb-2">Start a Conversation</h3>
-                  <p className="text-muted-foreground text-sm sm:text-base">Ask questions about your documents</p>
+            <div className="flex min-h-full flex-col items-center justify-center gap-8 px-6 py-12">
+              <div className="space-y-3 text-center">
+                <IconBadge icon={Sparkles} size="lg" tone="primary" className="mx-auto" />
+                <div className="space-y-1">
+                  <h3 className="text-lg font-semibold">Start a conversation</h3>
+                  <p className="text-sm text-muted-foreground">Ask questions about your documents</p>
                 </div>
               </div>
 
               {documents.length > 0 && (
-                <div className="space-y-2 sm:space-y-3 w-full max-w-md">
-                  <p className="text-xs sm:text-sm text-muted-foreground text-center">Try these questions:</p>
+                <div className="grid w-full max-w-lg gap-2 sm:grid-cols-2">
                   {sampleQuestions.map((question, index) => (
-                    <Button
+                    <button
                       key={index}
-                      variant="outline"
-                      className="w-full justify-start text-left text-xs sm:text-sm"
+                      className="rounded-lg border bg-background px-4 py-3 text-left text-sm text-muted-foreground transition-colors hover:border-foreground/20 hover:text-foreground"
                       onClick={() => handleSampleQuestion(question)}
                     >
                       {question}
-                    </Button>
+                    </button>
                   ))}
                 </div>
               )}
             </div>
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-6 p-4 sm:p-6">
               {messages.map((message, index) => (
                 <div
                   key={index}
                   className={`flex ${message.role === "user" ? "justify-end" : "justify-start"} animate-fade-up`}
                 >
                   <div
-                    className={`max-w-[90%] sm:max-w-[80%] rounded-lg p-3 sm:p-4 ${
+                    className={`max-w-[90%] sm:max-w-[80%] ${
                       message.role === "user"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted"
+                        ? "rounded-2xl rounded-br-md bg-primary px-4 py-2.5 text-primary-foreground"
+                        : "rounded-2xl rounded-bl-md border bg-muted/40 px-4 py-3"
                     }`}
                   >
-                    <p className="whitespace-pre-wrap text-sm sm:text-base">{message.content}</p>
-                    <div className="text-xs text-muted-foreground mt-2">
+                    <p className="whitespace-pre-wrap text-[0.9375rem] leading-relaxed">{message.content}</p>
+                    <div className={`mt-1.5 text-xs ${message.role === "user" ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
                       {new Date(message.timestamp).toLocaleTimeString()}
                     </div>
-                    
+
                     {message.role === "assistant" && (
-                      <div className="mt-3 pt-3 border-t border-border flex items-center gap-1 sm:gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleCopy(message.content)}
-                          className="text-xs"
-                        >
-                          <Copy className="h-3 w-3 mr-1" />
+                      <div className="-mb-1 mt-2 flex items-center gap-0.5 border-t pt-2 text-muted-foreground">
+                        <Button variant="ghost" size="sm" onClick={() => handleCopy(message.content)} className="h-7 px-2 text-xs">
+                          <Copy className="!h-3.5 !w-3.5" />
                           Copy
                         </Button>
-                        <Button variant="ghost" size="sm" className="text-xs">
-                          <ThumbsUp className="h-3 w-3" />
+                        <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Helpful">
+                          <ThumbsUp className="!h-3.5 !w-3.5" />
                         </Button>
-                        <Button variant="ghost" size="sm" className="text-xs">
-                          <ThumbsDown className="h-3 w-3" />
+                        <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Not helpful">
+                          <ThumbsDown className="!h-3.5 !w-3.5" />
                         </Button>
                       </div>
                     )}
                   </div>
                 </div>
               ))}
-              
+
               {isLoading && (
                 <div className="flex justify-start animate-fade-up">
-                  <div className="max-w-[80%] rounded-lg p-4 bg-muted">
-                    <div className="flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <span>AI is thinking...</span>
-                    </div>
+                  <div className="flex items-center gap-2 rounded-2xl rounded-bl-md border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Thinking…
                   </div>
                 </div>
               )}
@@ -389,21 +354,22 @@ const ChatView = ({ documents }: ChatViewProps) => {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyPress={(e) => e.key === "Enter" && handleSend()}
-          placeholder="Ask a question about your documents..."
-          className="flex-1 text-sm sm:text-base"
+          placeholder="Ask a question about your documents…"
+          className="h-11 flex-1"
           disabled={isLoading || documents.length === 0}
         />
-        <Button 
-          onClick={handleSend} 
+        <Button
+          onClick={handleSend}
           disabled={isLoading || !input.trim() || documents.length === 0}
-          size="sm"
-          className="px-3 sm:px-4"
+          size="icon"
+          className="h-11 w-11"
+          aria-label="Send message"
         >
-          <Send className="h-4 w-4" />
+          <Send />
         </Button>
       </div>
-      <p className="text-xs text-muted-foreground mt-2 text-center">
-        Press Enter to send • {input.length} characters
+      <p className="mt-2 text-center text-xs text-muted-foreground">
+        Press Enter to send · {input.length} characters
       </p>
     </div>
   );

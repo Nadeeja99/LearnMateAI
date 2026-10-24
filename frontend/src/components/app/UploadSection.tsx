@@ -1,10 +1,10 @@
 import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Upload, File, CheckCircle, XCircle } from "lucide-react";
+import { Upload, File } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import API_CONFIG from "@/lib/api";
+import IconBadge from "@/components/app/IconBadge";
 
 interface UploadSectionProps {
   onUploadSuccess: (filename: string) => void;
@@ -126,53 +126,42 @@ const UploadSection = ({ onUploadSuccess }: UploadSectionProps) => {
   }, [toast, handleUpload]);
 
   return (
-    <Card className="p-4 sm:p-6 border-dashed border-2 border-border hover:border-primary/50 transition-colors">
-      <div
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        className={`text-center space-y-3 sm:space-y-4 ${isDragging ? 'opacity-50' : ''}`}
-      >
-        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-primary/10 flex items-center justify-center mx-auto">
-          <Upload className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-        </div>
-        
-        <div>
-          <h3 className="font-semibold mb-1 text-sm sm:text-base">Upload Document</h3>
-          <p className="text-xs sm:text-sm text-muted-foreground">
-            Drag & drop or click to browse
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">
-            PDF files only (max 20MB)
-          </p>
-        </div>
+    <div
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      className={`rounded-xl border border-dashed p-5 text-center transition-colors ${
+        isDragging ? "border-primary bg-primary/5" : "bg-card hover:border-foreground/25"
+      }`}
+    >
+      <IconBadge icon={Upload} size="sm" tone="primary" className="mx-auto" />
 
+      <div className="mt-3">
+        <h3 className="text-sm font-medium">Upload document</h3>
+        <p className="mt-0.5 text-xs text-muted-foreground">Drag & drop a PDF, up to 20MB</p>
+      </div>
+
+      <div className="mt-4">
         {isUploading ? (
           <div className="space-y-2">
-            <Progress value={uploadProgress} className="h-2" />
-            <p className="text-sm text-muted-foreground">Uploading... {uploadProgress}%</p>
+            <Progress value={uploadProgress} className="h-1.5" />
+            <p className="text-xs text-muted-foreground">Uploading… {uploadProgress}%</p>
           </div>
         ) : (
-          <div>
-            <input
-              type="file"
-              accept=".pdf"
-              onChange={handleFileInput}
-              className="hidden"
-              id="file-upload"
-            />
-            <label htmlFor="file-upload">
-              <Button variant="outline" size="sm" asChild>
+          <>
+            <input type="file" accept=".pdf" onChange={handleFileInput} className="peer sr-only" id="file-upload" />
+            <label htmlFor="file-upload" className="peer-focus-visible:[&>*]:ring-2 peer-focus-visible:[&>*]:ring-ring">
+              <Button variant="outline" size="sm" className="w-full" asChild>
                 <span className="cursor-pointer">
-                  <File className="h-4 w-4 mr-2" />
-                  Choose File
+                  <File />
+                  Choose file
                 </span>
               </Button>
             </label>
-          </div>
+          </>
         )}
       </div>
-    </Card>
+    </div>
   );
 };
 
