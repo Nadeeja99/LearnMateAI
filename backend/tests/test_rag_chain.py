@@ -4,6 +4,7 @@ import pytest
 
 from app import rag_chain as rag_module
 from app.rag_chain import NO_CONTEXT_ANSWER, RAGChain
+from app.errors import UserFacingError
 from app.schemas import Quiz, QuizGenerationError
 from conftest import FakeLLM, FakeVectorStore
 
@@ -106,8 +107,8 @@ def test_stream_summary_streams_markdown_prompt(memory):
     assert "Markdown" in events[-1]["telemetry"]["system_prompt"]
 
 
-def test_stream_summary_without_content_raises_value_error(memory):
-    with pytest.raises(ValueError):
+def test_stream_summary_without_content_raises_user_facing_error(memory):
+    with pytest.raises(UserFacingError, match="No suitable content"):
         asyncio.run(collect(make_chain(FakeLLM(), FakeVectorStore(results=[])).stream_summary()))
 
 

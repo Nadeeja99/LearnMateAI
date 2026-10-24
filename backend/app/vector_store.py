@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import pickle
@@ -24,7 +25,8 @@ class VectorStore:
         self.documents: List[Document] = []
         self.store_dir = store_dir
         self.store_path = os.path.join(store_dir, "index")
-        self.metadata_path = os.path.join(store_dir, "metadata.pkl")
+        self.metadata_path = os.path.join(store_dir, "metadata.json")
+        self.legacy_metadata_path = os.path.join(store_dir, "metadata.pkl")  # pre-JSON format
         # Searches run in worker threads (asyncio.to_thread), so guard concurrent mutation
         self._lock = threading.RLock()
         
@@ -144,8 +146,9 @@ class VectorStore:
             if os.path.exists(self.store_path):
                 import shutil
                 shutil.rmtree(self.store_path)
-            if os.path.exists(self.metadata_path):
-                os.remove(self.metadata_path)
+            for path in (self.metadata_path, self.legacy_metadata_path):
+                if os.path.exists(path):
+                    os.remove(path)
             
             logger.info("Vector store cleared")
             
@@ -154,20 +157,22 @@ class VectorStore:
             raise Exception(f"Failed to clear vector store: {str(e)}")
     
     def save_vector_store(self) -> None:
-        """Save vector store to disk"""
-        try:
-            if self.vector_store is not None:
-                os.makedirs(self.store_dir, exist_ok=True)
-                self.vector_store.save_local(self.store_path)
-                
-                # Save metadata separately
-                with open(self.metadata_path, 'wb') as f:
-                    pickle.dump(self.documents, f)
-                
-                logger.info("Vector store saved to disk")
-                
-        except Exception as e:
-            logger.error(f"Error saving vector store: {e}")
+        """Save vector store to disk. Raises on failure so callers never report a lost upload as saved."""
+        if self.vector_store is None:
+            return
+        os.makedirs(self.store_dir, exist_ok=True)
+        self.vector_store.save_local(self.store_path)
+
+        # Chunk metadata as JSON (not pickle), written atomically so a crash can't truncate it
+        records = [{"page_content": doc.page_content, "metadata": doc.metadata} for doc in self.documents]
+        tmp_path = f"{self.metadata_path}.tmp"
+        with open(tmp_path, "w", encoding="utf-8") as f:
+            json.dump(records, f, ensure_ascii=False)
+        os.replace(tmp_path, self.metadata_path)
+        if os.path.exists(self.legacy_metadata_path):
+            os.remove(self.legacy_metadata_path)
+
+        logger.info("Vector store saved to disk")
     
     def delete_document(self, document_name: str) -> None:
         """Delete a specific document from the vector store"""
@@ -214,16 +219,26 @@ class VectorStore:
     def load_vector_store(self) -> None:
         """Load vector store from disk"""
         try:
-            if os.path.exists(self.store_path) and os.path.exists(self.metadata_path):
+            has_metadata = os.path.exists(self.metadata_path) or os.path.exists(self.legacy_metadata_path)
+            if os.path.exists(self.store_path) and has_metadata:
+                # LangChain's FAISS docstore is itself a pickle, hence the flag. Acceptable here:
+                # these files are only ever written by this server, and session directories are
+                # derived from ids validated against a strict pattern (sessions.py), so clients
+                # cannot place or choose files on disk.
                 self.vector_store = FAISS.load_local(
                     self.store_path, 
                     self.embeddings,
                     allow_dangerous_deserialization=True
                 )
                 
-                # Load metadata
-                with open(self.metadata_path, 'rb') as f:
-                    self.documents = pickle.load(f)
+                if os.path.exists(self.metadata_path):
+                    with open(self.metadata_path, encoding="utf-8") as f:
+                        self.documents = [Document(page_content=r["page_content"], metadata=r["metadata"]) for r in json.load(f)]
+                else:
+                    # One-time migration of indexes saved before the JSON format
+                    with open(self.legacy_metadata_path, 'rb') as f:
+                        self.documents = pickle.load(f)
+                    self.save_vector_store()
                 
                 logger.info(f"Loaded vector store with {len(self.documents)} documents")
             else:

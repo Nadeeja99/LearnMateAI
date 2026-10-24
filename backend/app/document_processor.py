@@ -4,6 +4,8 @@ from typing import List, Dict, Any
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
 
+from .errors import UserFacingError
+
 logger = logging.getLogger(__name__)
 
 class DocumentProcessor:
@@ -31,7 +33,7 @@ class DocumentProcessor:
             return text.strip()
         except Exception as e:
             logger.error(f"Error extracting text from PDF: {e}")
-            raise Exception(f"Failed to extract text from PDF: {str(e)}")
+            raise UserFacingError("This PDF couldn't be read. It may be encrypted or damaged.", status_code=422)
     
     def process_document(self, filename: str, content: bytes) -> List[Document]:
         """Process document and return chunked documents"""
@@ -40,7 +42,7 @@ class DocumentProcessor:
             text = self.extract_text_from_pdf(content)
             
             if not text.strip():
-                raise Exception("No text found in PDF")
+                raise UserFacingError("No selectable text found in this PDF. Scanned PDFs aren't supported yet.", status_code=422)
             
             # Create document object
             doc = Document(
@@ -58,6 +60,8 @@ class DocumentProcessor:
             logger.info(f"Processed document {filename}: {len(chunks)} chunks created")
             return chunks
             
+        except UserFacingError:
+            raise
         except Exception as e:
             logger.error(f"Error processing document {filename}: {e}")
             raise Exception(f"Failed to process document: {str(e)}")

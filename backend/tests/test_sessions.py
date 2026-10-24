@@ -35,7 +35,7 @@ def api(monkeypatch, registry):
     monkeypatch.setattr(main.rag_chain, "llm", FakeLLM(tokens=("ok",)))
 
     def fake_process(filename, content):
-        text = content.decode()
+        text = content.decode().removeprefix("%PDF-")
         return [Document(page_content=f"{text} part {i}", metadata={"source": filename, "file_size": len(content), "text_length": len(text)}) for i in range(2)]
 
     monkeypatch.setattr(main.document_processor, "process_document", fake_process)
@@ -47,7 +47,7 @@ def api(monkeypatch, registry):
 
 
 def upload(client, filename, text):
-    response = client.post("/upload", files={"file": (filename, text.encode(), "application/pdf")})
+    response = client.post("/upload", files={"file": (filename, b"%PDF-" + text.encode(), "application/pdf")})
     assert response.status_code == 200, response.text
     return response
 

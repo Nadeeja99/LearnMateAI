@@ -8,6 +8,8 @@ import os
 import sys
 import tempfile
 
+import pytest
+
 # load_dotenv() never overrides variables that are already set
 os.environ["OPENAI_API_KEY"] = "test-key"
 os.environ["LANGFUSE_ENABLED"] = "false"
@@ -19,6 +21,14 @@ sys.path.insert(0, BACKEND_DIR)
 def pytest_sessionstart(session):
     # After pytest resolves testpaths, before test modules (and app singletons) are imported
     os.chdir(tempfile.mkdtemp(prefix="learnmate-tests-"))
+
+
+@pytest.fixture(autouse=True)
+def reset_rate_limits():
+    """Rate-limit windows are process-wide; start every test with a clean slate."""
+    from app import rate_limit
+    rate_limit.reset_all()
+    yield
 
 
 class FakeChunk:

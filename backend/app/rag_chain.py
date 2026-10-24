@@ -11,6 +11,7 @@ from typing import List, Dict, Any, Optional, AsyncIterator, Awaitable, Callable
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage
 
+from .errors import UserFacingError
 from .schemas import Quiz, QuizGenerationError
 
 logger = logging.getLogger(__name__)
@@ -118,6 +119,8 @@ class RAGChain:
                 "telemetry": telemetry,
             }
 
+        except UserFacingError:
+            raise
         except Exception as e:
             logger.error(f"Error answering question: {e}")
             raise Exception(f"Failed to answer question: {str(e)}")
@@ -180,7 +183,7 @@ class RAGChain:
             logger.info(f"Generating summary for documents: {document_names or 'all documents'}")
             relevant_docs, _ = await self._retrieve(SUMMARY_QUERY, 20, document_names)
             if not relevant_docs:
-                raise Exception("No suitable content found for summarization")
+                raise UserFacingError("No suitable content found for summarization", status_code=422)
 
             context = self._create_context_from_results(relevant_docs)
             stats = await self._invoke_llm(self.summary_llm, self._build_summary_prompt(context))
@@ -190,6 +193,8 @@ class RAGChain:
             self._record_summary(user_id, document_names, summary, len(context))
             return summary
 
+        except UserFacingError:
+            raise
         except Exception as e:
             logger.error(f"Error generating summary: {e}")
             raise Exception(f"Failed to generate summary: {str(e)}")
@@ -207,7 +212,7 @@ class RAGChain:
         request_started = time.perf_counter()
         relevant_docs, retrieval_ms = await self._retrieve(SUMMARY_QUERY, 20, document_names)
         if not relevant_docs:
-            raise ValueError("No suitable content found for summarization")
+            raise UserFacingError("No suitable content found for summarization", status_code=422)
 
         sources = self._source_metadata(relevant_docs)
         yield {"type": "meta", "model": self.model_name, "retrieval_ms": round(retrieval_ms, 1), "sources": sources}
@@ -247,7 +252,7 @@ class RAGChain:
             request_started = time.perf_counter()
             search_results, retrieval_ms = await self._retrieve(QUIZ_QUERY, 20, document_names)
             if not search_results:
-                raise Exception("No suitable content found for quiz generation")
+                raise UserFacingError("No suitable content found for quiz generation", status_code=422)
 
             context = self._create_context_from_results(search_results)
             prompt = self._create_quiz_prompt(context, num_questions, difficulty)
@@ -276,7 +281,7 @@ class RAGChain:
             }
             return {"questions": questions, "telemetry": telemetry}
 
-        except QuizGenerationError:
+        except UserFacingError:  # includes QuizGenerationError
             raise
         except Exception as e:
             logger.error(f"Error generating quiz: {e}")

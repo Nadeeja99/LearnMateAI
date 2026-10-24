@@ -2,7 +2,7 @@ import os
 import logging
 import io
 from datetime import datetime
-from fastapi import Depends, FastAPI, File, UploadFile, HTTPException, WebSocket, WebSocketDisconnect, status
+from fastapi import Depends, FastAPI, File, UploadFile, HTTPException, Request, WebSocket, WebSocketDisconnect, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 from dotenv import load_dotenv
@@ -13,13 +13,14 @@ import json
 # Import our RAG modules
 from .document_processor import DocumentProcessor
 from .sessions import SessionStoreRegistry, is_valid_session_id, require_session_id
+from .rate_limit import AI_POLICY, ai_rate_limited, upload_rate_limited
 from .rag_chain import RAGChain
 from .langfuse_config import langfuse_config
 from .conversation_memory import conversation_memory
 from .learning_analytics import learning_analytics
 from .voice_agent import VoiceAgent, voice_agent
 from .voice_processing import VoiceProcessingService, voice_processing_service
-from .schemas import QuizGenerationError
+from .errors import UserFacingError, internal_error, new_error_ref
 
 # Load environment variables
 load_dotenv()
@@ -36,35 +37,69 @@ app = FastAPI(
 )
 
 # Configure CORS
-allowed_origins = [
-    "http://localhost:3000", 
-    "http://localhost:5173", 
-    "http://localhost:8080", 
-    "http://localhost:8501", 
-    "http://localhost:8081"
+DEV_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://localhost:8080",
+    "http://localhost:8081",
+    "http://localhost:8501",
 ]
+# Used in production only when CORS_ORIGINS is unset, so existing deploys keep working
+DEFAULT_PRODUCTION_ORIGINS = ["https://learnmate-frontend.onrender.com"]
 
-# Add production origins if in production
-if os.getenv("ENVIRONMENT") == "production":
-    allowed_origins.extend([
-        "https://learnmate-frontend.onrender.com",
-        "https://learnmate-ai.onrender.com",
-        # Add your specific Render URLs here
-    ])
+def _cors_origins() -> list:
+    configured = [origin.strip() for origin in os.getenv("CORS_ORIGINS", "").split(",") if origin.strip()]
+    if os.getenv("ENVIRONMENT") == "production":
+        return configured or DEFAULT_PRODUCTION_ORIGINS
+    # Development: local dev servers are always allowed, plus anything configured
+    return list(dict.fromkeys(DEV_ORIGINS + configured))
 
-# Always add the specific Render URLs regardless of environment
-allowed_origins.extend([
-    "https://learnmate-frontend.onrender.com",
-    "https://learnmate-backend-koe5.onrender.com",
-])
+allowed_origins = _cors_origins()
+logger.info(f"CORS allowed origins: {allowed_origins}")
 
+MAX_UPLOAD_BYTES = int(os.getenv("MAX_UPLOAD_SIZE", str(20 * 1024 * 1024)))
+MAX_DOCUMENTS_PER_SESSION = int(os.getenv("MAX_DOCUMENTS_PER_SESSION", "25"))
+# Embedding cost scales with text, not file size: ~1,000 chars per chunk => ~2M chars max
+MAX_CHUNKS_PER_DOCUMENT = int(os.getenv("MAX_CHUNKS_PER_DOCUMENT", "2000"))
+DEBUG_ENDPOINTS_ENABLED = os.getenv("ENABLE_DEBUG_ENDPOINTS", "false").lower() == "true"
+
+@app.middleware("http")
+async def security_middleware(request: Request, call_next):
+    # Reject oversized uploads before the multipart body is read and spooled
+    if request.url.path == "/upload" and request.method == "POST":
+        declared = request.headers.get("content-length")
+        if declared and declared.isdigit() and int(declared) > MAX_UPLOAD_BYTES + 64 * 1024:
+            return JSONResponse(status_code=413, content={"detail": _too_large_message()})
+
+    try:
+        response = await call_next(request)
+    except Exception as exc:
+        # Handled here (inside CORS) rather than by the outermost error middleware, so the
+        # browser still receives CORS headers and can read the error instead of a network failure
+        ref = new_error_ref()
+        logger.error(f"Unhandled error on {request.method} {request.url.path} [ref {ref}]", exc_info=exc)
+        response = JSONResponse(status_code=500, content={"detail": f"Something went wrong. Please try again. (ref {ref})"})
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault("Referrer-Policy", "no-referrer")
+    return response
+
+def _too_large_message() -> str:
+    return f"File is too large. The maximum size is {MAX_UPLOAD_BYTES // (1024 * 1024)} MB."
+
+# Added after the middleware above, so CORS is outermost and also covers its early responses
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_credentials=False,  # the API uses the X-Session-Id header, never cookies
+    allow_methods=["GET", "POST", "DELETE"],
+    allow_headers=["Content-Type", "Accept", "X-Session-Id"],
 )
+
+def require_debug_endpoints():
+    """Operational endpoints (cost money or list other users' sessions) are off unless enabled"""
+    if not DEBUG_ENDPOINTS_ENABLED:
+        raise HTTPException(status_code=404, detail="Not Found")
 
 # Global variables for RAG system
 document_processor = None
@@ -116,11 +151,12 @@ initialize_rag_system()
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
-    """Global exception handler"""
-    logger.error(f"Global exception: {exc}")
+    """Last-resort handler: log the traceback, return nothing internal"""
+    ref = new_error_ref()
+    logger.error(f"Unhandled error on {request.method} {request.url.path} [ref {ref}]", exc_info=exc)
     return JSONResponse(
         status_code=500,
-        content={"detail": f"Internal server error: {str(exc)}"}
+        content={"detail": f"Something went wrong. Please try again. (ref {ref})"}
     )
 
 def _store(session_id: str):
@@ -162,10 +198,12 @@ def _event_stream(events, label: str) -> StreamingResponse:
         try:
             async for event in events:
                 yield _sse(event["type"], event)
-        except Exception as e:
-            logger.error(f"{label} stream error: {e}")
-            message = str(e) if isinstance(e, ValueError) else f"{label} failed. Please try again."
-            yield _sse("error", {"type": "error", "message": message})
+        except UserFacingError as e:
+            yield _sse("error", {"type": "error", "message": e.message})
+        except Exception:
+            ref = new_error_ref()
+            logger.exception(f"{label} stream failed [ref {ref}]")
+            yield _sse("error", {"type": "error", "message": f"{label} failed. Please try again. (ref {ref})"})
 
     return StreamingResponse(
         generate(),
@@ -184,38 +222,60 @@ async def health_check():
     }
 
 # Upload Document
+async def _read_pdf_upload(file: UploadFile) -> bytes:
+    """Read an upload in chunks, enforcing the size limit and checking it really is a PDF"""
+    chunks, size = [], 0
+    while chunk := await file.read(1024 * 1024):
+        size += len(chunk)
+        if size > MAX_UPLOAD_BYTES:
+            raise UserFacingError(_too_large_message(), status_code=413)
+        chunks.append(chunk)
+    content = b"".join(chunks)
+    if not content.startswith(b"%PDF-"):
+        raise UserFacingError("This file isn't a valid PDF.", status_code=415)
+    return content
+
 @app.post("/upload")
-async def upload_document(file: UploadFile = File(...), session_id: str = Depends(require_session_id)):
+async def upload_document(file: UploadFile = File(...), session_id: str = Depends(upload_rate_limited)):
     """Upload and process a document into the caller's session"""
     try:
-        if not file.filename.lower().endswith('.pdf'):
-            raise HTTPException(status_code=400, detail="Only PDF files are supported")
+        # Keep only the base name: it is shown in the UI and used as the document key
+        filename = os.path.basename((file.filename or "").replace("\\", "/")).strip()[:200]
+        if not filename.lower().endswith('.pdf'):
+            raise UserFacingError("Only PDF files are supported", status_code=415)
         
-        logger.info(f"Processing document: {file.filename}")
+        store = _store(session_id)
+        existing = store.document_summaries()
+        if filename not in existing and len(existing) >= MAX_DOCUMENTS_PER_SESSION:
+            raise UserFacingError(
+                f"You can have up to {MAX_DOCUMENTS_PER_SESSION} documents. Delete one to upload another.",
+                status_code=409,
+            )
         
-        # Read file content
-        content = await file.read()
+        content = await _read_pdf_upload(file)
+        logger.info(f"Processing document: {filename} ({len(content)} bytes)")
         
         # Process document with RAG system
-        documents = document_processor.process_document(file.filename, content)
+        documents = document_processor.process_document(filename, content)
+        if len(documents) > MAX_CHUNKS_PER_DOCUMENT:
+            raise UserFacingError("This document has too much text to process. Try splitting it into smaller files.", status_code=413)
         uploaded_at = datetime.now().isoformat()
         for doc in documents:
             doc.metadata["uploaded_at"] = uploaded_at
         
         # Re-uploading a file replaces it instead of duplicating its chunks
-        store = _store(session_id)
-        if file.filename in store.document_summaries():
-            store.delete_document(file.filename)
+        if filename in existing:
+            store.delete_document(filename)
         store.add_documents(documents)
         
-        logger.info(f"Document {file.filename} processed and added to vector store successfully")
+        logger.info(f"Document {filename} processed and added to vector store successfully")
         
         # Track analytics for upload
         if learning_analytics:
             learning_analytics.track_session(
                 user_id=session_id,
                 session_type="upload",
-                document_name=file.filename,
+                document_name=filename,
                 duration_seconds=0,
                 metadata={
                     "file_size": len(content),
@@ -228,7 +288,7 @@ async def upload_document(file: UploadFile = File(...), session_id: str = Depend
             "message": "Document uploaded and processed successfully",
             "details": {
                 "status": "success",
-                "file_name": file.filename,
+                "file_name": filename,
                 "chunks_created": len(documents),
                 "total_documents": len(store.get_all_documents())
             }
@@ -236,13 +296,12 @@ async def upload_document(file: UploadFile = File(...), session_id: str = Depend
         
     except HTTPException:
         raise
-    except Exception as e:
-        logger.error(f"Upload error: {e}")
-        raise HTTPException(status_code=500, detail=f"Error processing document: {str(e)}")
+    except Exception:
+        raise internal_error("Processing the document")
 
 # Ask Question
 @app.post("/ask")
-async def ask_question(question_data: dict, session_id: str = Depends(require_session_id)):
+async def ask_question(question_data: dict, session_id: str = Depends(ai_rate_limited)):
     """Ask a question using RAG system"""
     try:
         question = question_data.get("question", "").strip()
@@ -268,13 +327,12 @@ async def ask_question(question_data: dict, session_id: str = Depends(require_se
         
     except HTTPException:
         raise
-    except Exception as e:
-        logger.error(f"Question error: {e}")
-        raise HTTPException(status_code=500, detail=f"Error processing question: {str(e)}")
+    except Exception:
+        raise internal_error("Answering the question")
 
 # Ask Question (streaming)
 @app.post("/ask/stream")
-async def ask_question_stream(question_data: dict, session_id: str = Depends(require_session_id)):
+async def ask_question_stream(question_data: dict, session_id: str = Depends(ai_rate_limited)):
     """Stream an answer as SSE events: meta, token*, done (or error)"""
     question = (question_data.get("question") or "").strip()
     if not question:
@@ -315,13 +373,12 @@ async def list_documents(session_id: str = Depends(require_session_id)):
             "total": len(doc_list),
             "total_chunks": len(store.get_all_documents())
         }
-    except Exception as e:
-        logger.error(f"List documents error: {e}")
-        raise HTTPException(status_code=500, detail="Error listing documents")
+    except Exception:
+        raise internal_error("Listing documents")
 
 # Generate Summary
 @app.post("/summarize")
-async def generate_summary(summary_data: dict, session_id: str = Depends(require_session_id)):
+async def generate_summary(summary_data: dict, session_id: str = Depends(ai_rate_limited)):
     """Generate a summary using RAG system"""
     try:
         store = _store(session_id)
@@ -342,13 +399,12 @@ async def generate_summary(summary_data: dict, session_id: str = Depends(require
         
     except HTTPException:
         raise
-    except Exception as e:
-        logger.error(f"Summary error: {e}")
-        raise HTTPException(status_code=500, detail=f"Error generating summary: {str(e)}")
+    except Exception:
+        raise internal_error("Generating the summary")
 
 # Generate Summary (streaming)
 @app.post("/summarize/stream")
-async def generate_summary_stream(summary_data: dict, session_id: str = Depends(require_session_id)):
+async def generate_summary_stream(summary_data: dict, session_id: str = Depends(ai_rate_limited)):
     """Stream a Markdown summary as SSE events: meta, token*, done (or error)"""
     store = _store(session_id)
     _require_documents(store)
@@ -359,7 +415,7 @@ async def generate_summary_stream(summary_data: dict, session_id: str = Depends(
 
 # Generate Quiz
 @app.post("/generate-quiz")
-async def generate_quiz(quiz_data: dict, session_id: str = Depends(require_session_id)):
+async def generate_quiz(quiz_data: dict, session_id: str = Depends(ai_rate_limited)):
     """Generate a quiz using RAG system"""
     try:
         store = _store(session_id)
@@ -396,12 +452,8 @@ async def generate_quiz(quiz_data: dict, session_id: str = Depends(require_sessi
         
     except HTTPException:
         raise
-    except QuizGenerationError as e:
-        logger.error(f"Quiz validation error: {e}")
-        raise HTTPException(status_code=502, detail=str(e))
-    except Exception as e:
-        logger.error(f"Quiz generation error: {e}")
-        raise HTTPException(status_code=500, detail=f"Error generating quiz: {str(e)}")
+    except Exception:
+        raise internal_error("Generating the quiz")
 
 # Delete Specific Document
 @app.delete("/documents/{filename}")
@@ -416,9 +468,8 @@ async def delete_document(filename: str, session_id: str = Depends(require_sessi
             "timestamp": datetime.now().isoformat(),
             "status": "success"
         }
-    except Exception as e:
-        logger.error(f"Delete document error: {e}")
-        raise HTTPException(status_code=500, detail=f"Error deleting document: {str(e)}")
+    except Exception:
+        raise internal_error("Deleting the document")
 
 # Clear Vector Store
 @app.delete("/clear-documents")
@@ -432,9 +483,8 @@ async def clear_documents(session_id: str = Depends(require_session_id)):
             "timestamp": datetime.now().isoformat(),
             "status": "success"
         }
-    except Exception as e:
-        logger.error(f"Clear documents error: {e}")
-        raise HTTPException(status_code=500, detail="Error clearing documents")
+    except Exception:
+        raise internal_error("Clearing documents")
 
 # Get Current Session Documents
 @app.get("/current-session-documents")
@@ -447,9 +497,8 @@ async def get_current_session_documents(session_id: str = Depends(require_sessio
             "total": len(details),
             "details": details
         }
-    except Exception as e:
-        logger.error(f"Current session documents error: {e}")
-        raise HTTPException(status_code=500, detail="Error getting current session documents")
+    except Exception:
+        raise internal_error("Loading session documents")
 
 # Get Vector Store Info
 @app.get("/vector-store-info")
@@ -467,9 +516,8 @@ async def get_vector_store_info(session_id: str = Depends(require_session_id)):
             "total_chunks": len(documents),
             "current_session_documents": list(summaries.keys())
         }
-    except Exception as e:
-        logger.error(f"Vector store info error: {e}")
-        raise HTTPException(status_code=500, detail="Error getting vector store info")
+    except Exception:
+        raise internal_error("Loading vector store info")
 
 # ===== CONVERSATION MEMORY ENDPOINTS =====
 
@@ -491,9 +539,8 @@ async def create_conversation(conversation_data: dict, session_id: str = Depends
             "conversation_id": conversation_id,
             "message": "Conversation created successfully"
         }
-    except Exception as e:
-        logger.error(f"Error creating conversation: {e}")
-        raise HTTPException(status_code=500, detail=f"Error creating conversation: {str(e)}")
+    except Exception:
+        raise internal_error("Creating the conversation")
 
 @app.get("/conversations/{conversation_id}/history")
 async def get_conversation_history(conversation_id: str, limit: int = 10, session_id: str = Depends(require_session_id)):
@@ -508,9 +555,8 @@ async def get_conversation_history(conversation_id: str, limit: int = 10, sessio
             "history": history,
             "context": context
         }
-    except Exception as e:
-        logger.error(f"Error getting conversation history: {e}")
-        raise HTTPException(status_code=500, detail=f"Error getting conversation history: {str(e)}")
+    except Exception:
+        raise internal_error("Loading the conversation")
 
 @app.get("/conversations/user/{user_id}")
 async def get_user_conversations(user_id: str, limit: int = 20, session_id: str = Depends(require_session_id)):
@@ -522,9 +568,8 @@ async def get_user_conversations(user_id: str, limit: int = 20, session_id: str 
             "user_id": user_id,
             "conversations": conversations
         }
-    except Exception as e:
-        logger.error(f"Error getting user conversations: {e}")
-        raise HTTPException(status_code=500, detail=f"Error getting user conversations: {str(e)}")
+    except Exception:
+        raise internal_error("Loading conversations")
 
 @app.delete("/conversations/{conversation_id}")
 async def delete_conversation(conversation_id: str, session_id: str = Depends(require_session_id)):
@@ -533,9 +578,8 @@ async def delete_conversation(conversation_id: str, session_id: str = Depends(re
     try:
         conversation_memory.delete_conversation(conversation_id)
         return {"message": f"Conversation {conversation_id} deleted successfully"}
-    except Exception as e:
-        logger.error(f"Error deleting conversation: {e}")
-        raise HTTPException(status_code=500, detail=f"Error deleting conversation: {str(e)}")
+    except Exception:
+        raise internal_error("Deleting the conversation")
 
 # ===== LEARNING ANALYTICS ENDPOINTS =====
 
@@ -546,9 +590,8 @@ async def get_user_analytics(user_id: str, session_id: str = Depends(require_ses
     try:
         analytics = learning_analytics.get_user_analytics(user_id)
         return analytics
-    except Exception as e:
-        logger.error(f"Error getting user analytics: {e}")
-        raise HTTPException(status_code=500, detail=f"Error getting user analytics: {str(e)}")
+    except Exception:
+        raise internal_error("Loading analytics")
 
 @app.get("/analytics/global")
 async def get_global_analytics():
@@ -556,9 +599,8 @@ async def get_global_analytics():
     try:
         analytics = learning_analytics.get_global_analytics()
         return analytics
-    except Exception as e:
-        logger.error(f"Error getting global analytics: {e}")
-        raise HTTPException(status_code=500, detail=f"Error getting global analytics: {str(e)}")
+    except Exception:
+        raise internal_error("Loading analytics")
 
 @app.get("/analytics/performance-metrics")
 async def get_performance_metrics(metric_name: str = None, days: int = 30):
@@ -570,9 +612,8 @@ async def get_performance_metrics(metric_name: str = None, days: int = 30):
             "metric_name": metric_name,
             "days": days
         }
-    except Exception as e:
-        logger.error(f"Error getting performance metrics: {e}")
-        raise HTTPException(status_code=500, detail=f"Error getting performance metrics: {str(e)}")
+    except Exception:
+        raise internal_error("Loading performance metrics")
 
 @app.post("/analytics/track-quiz")
 async def track_quiz_completion(quiz_data: dict, session_id: str = Depends(require_session_id)):
@@ -608,9 +649,8 @@ async def track_quiz_completion(quiz_data: dict, session_id: str = Depends(requi
         )
         
         return {"message": "Quiz completion tracked successfully"}
-    except Exception as e:
-        logger.error(f"Error tracking quiz completion: {e}")
-        raise HTTPException(status_code=500, detail=f"Error tracking quiz completion: {str(e)}")
+    except Exception:
+        raise internal_error("Recording the quiz result")
 
 # ===== VOICE AGENT ENDPOINTS =====
 
@@ -631,6 +671,13 @@ async def websocket_voice_endpoint(websocket: WebSocket, client_id: str, session
                 # Receive message from client
                 data = await websocket.receive_text()
                 message = json.loads(data)
+                
+                if message.get("type") in ("voice", "text"):
+                    try:
+                        AI_POLICY.check(session_id, websocket.client.host if websocket.client else "unknown")
+                    except HTTPException as limited:
+                        await websocket.send_text(json.dumps({"type": "error", "text": limited.detail, "message": limited.detail}))
+                        continue
                 
                 # Handle the message
                 await voice_agent.handle_websocket_message(client_id, message)
@@ -665,11 +712,10 @@ async def get_voice_agent_status():
                 "analytics_tracking"
             ]
         }
-    except Exception as e:
-        logger.error(f"Error getting voice agent status: {e}")
-        raise HTTPException(status_code=500, detail=f"Error getting voice agent status: {str(e)}")
+    except Exception:
+        raise internal_error("Loading voice status")
 
-@app.get("/voice/connections")
+@app.get("/voice/connections", dependencies=[Depends(require_debug_endpoints)])
 async def get_voice_connections():
     """Get information about active voice connections"""
     try:
@@ -683,11 +729,10 @@ async def get_voice_connections():
             "active_connections": connections,
             "total_connections": len(connections)
         }
-    except Exception as e:
-        logger.error(f"Error getting voice connections: {e}")
-        raise HTTPException(status_code=500, detail=f"Error getting voice connections: {str(e)}")
+    except Exception:
+        raise internal_error("Loading voice connections")
 
-@app.get("/voice/test")
+@app.get("/voice/test", dependencies=[Depends(require_debug_endpoints)])
 async def test_voice_processing():
     """Test voice processing capabilities"""
     try:
@@ -697,9 +742,10 @@ async def test_voice_processing():
         test_result = await voice_processing_service.test_voice_processing()
         return test_result
         
-    except Exception as e:
-        logger.error(f"Error testing voice processing: {e}")
-        raise HTTPException(status_code=500, detail=f"Error testing voice processing: {str(e)}")
+    except HTTPException:
+        raise
+    except Exception:
+        raise internal_error("Testing voice processing")
 
 @app.get("/voice/voices")
 async def get_available_voices():
@@ -713,9 +759,8 @@ async def get_available_voices():
             "current_voice": voice_processing_service.tts_voice
         }
         
-    except Exception as e:
-        logger.error(f"Error getting available voices: {e}")
-        raise HTTPException(status_code=500, detail=f"Error getting available voices: {str(e)}")
+    except Exception:
+        raise internal_error("Loading voices")
 
 if __name__ == "__main__":
     uvicorn.run(
