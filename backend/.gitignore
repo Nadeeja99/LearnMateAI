@@ -65,6 +65,8 @@ data/sessions/
 data/conversations/
 data/analytics/
 data/vectorstore_metadata.pkl
+# SQLite database incl. its write-ahead log and shared-memory side files
+data/learnmate.db*
 
 # Testing
 .pytest_cache/
