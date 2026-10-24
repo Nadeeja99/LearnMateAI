@@ -4,7 +4,7 @@ import io
 from datetime import datetime
 from fastapi import FastAPI, File, UploadFile, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from dotenv import load_dotenv
 import uvicorn
 import uuid
@@ -19,6 +19,7 @@ from .conversation_memory import conversation_memory
 from .learning_analytics import learning_analytics
 from .voice_agent import VoiceAgent, voice_agent
 from .voice_processing import VoiceProcessingService, voice_processing_service
+from .schemas import QuizGenerationError
 
 # Load environment variables
 load_dotenv()
@@ -118,6 +119,44 @@ async def global_exception_handler(request, exc):
         content={"detail": f"Internal server error: {str(exc)}"}
     )
 
+def _session_documents(document_name: str = None):
+    """Documents in the current session, narrowed to document_name when it is one of them"""
+    session_docs = list(current_session_documents.keys()) if current_session_documents else None
+    if document_name and session_docs and document_name in session_docs:
+        return [document_name]
+    return session_docs
+
+def _require_documents():
+    if not vector_store.has_documents():
+        raise HTTPException(
+            status_code=400,
+            detail="No documents uploaded yet. Please upload a document first."
+        )
+
+def _sse(event: str, data: dict) -> str:
+    return f"event: {event}\ndata: {json.dumps(data, default=str)}\n\n"
+
+def _event_stream(events, label: str) -> StreamingResponse:
+    """Serialize RAG events as Server-Sent Events.
+
+    If the client disconnects, Starlette cancels this generator, which closes the
+    upstream LLM stream so generation stops server-side too.
+    """
+    async def generate():
+        try:
+            async for event in events:
+                yield _sse(event["type"], event)
+        except Exception as e:
+            logger.error(f"{label} stream error: {e}")
+            message = str(e) if isinstance(e, ValueError) else f"{label} failed. Please try again."
+            yield _sse("error", {"type": "error", "message": message})
+
+    return StreamingResponse(
+        generate(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
 # Health Check
 @app.get("/health")
 async def health_check():
@@ -204,7 +243,7 @@ async def ask_question(question_data: dict):
         logger.info(f"Processing question: {question[:100]}...")
         
         # Get current session document names
-        session_docs = list(current_session_documents.keys()) if current_session_documents else None
+        session_docs = _session_documents()
         logger.info(f"Using documents from current session: {session_docs}")
         
         # Get user_id and conversation_id from request
@@ -226,6 +265,24 @@ async def ask_question(question_data: dict):
     except Exception as e:
         logger.error(f"Question error: {e}")
         raise HTTPException(status_code=500, detail=f"Error processing question: {str(e)}")
+
+# Ask Question (streaming)
+@app.post("/ask/stream")
+async def ask_question_stream(question_data: dict):
+    """Stream an answer as SSE events: meta, token*, done (or error)"""
+    question = (question_data.get("question") or "").strip()
+    if not question:
+        raise HTTPException(status_code=400, detail="Question is required")
+    _require_documents()
+
+    logger.info(f"Streaming answer for: {question[:100]}...")
+    events = rag_chain.stream_answer(
+        question=question,
+        document_names=_session_documents(),
+        conversation_id=question_data.get("conversation_id", "default"),
+        user_id=question_data.get("user_id", "default"),
+    )
+    return _event_stream(events, "Answer generation")
 
 # List Documents
 @app.get("/documents")
@@ -266,13 +323,7 @@ async def generate_summary(summary_data: dict):
         document_name = summary_data.get("document_name")
         
         # Get current session document names
-        session_docs = list(current_session_documents.keys()) if current_session_documents else None
-        
-        # If specific document requested, use only that one
-        if document_name and document_name in session_docs:
-            summary_docs = [document_name]
-        else:
-            summary_docs = session_docs
+        summary_docs = _session_documents(document_name)
         
         logger.info(f"Generating summary for: {summary_docs or 'all documents'}")
         
@@ -293,6 +344,16 @@ async def generate_summary(summary_data: dict):
     except Exception as e:
         logger.error(f"Summary error: {e}")
         raise HTTPException(status_code=500, detail=f"Error generating summary: {str(e)}")
+
+# Generate Summary (streaming)
+@app.post("/summarize/stream")
+async def generate_summary_stream(summary_data: dict):
+    """Stream a Markdown summary as SSE events: meta, token*, done (or error)"""
+    _require_documents()
+    summary_docs = _session_documents(summary_data.get("document_name"))
+    logger.info(f"Streaming summary for: {summary_docs or 'all documents'}")
+    events = rag_chain.stream_summary(summary_docs, user_id=summary_data.get("user_id", "default"))
+    return _event_stream(events, "Summary generation")
 
 # Generate Quiz
 @app.post("/generate-quiz")
@@ -316,23 +377,19 @@ async def generate_quiz(quiz_data: dict):
             )
         
         # Get current session document names
-        session_docs = list(current_session_documents.keys()) if current_session_documents else None
-        
-        # If specific document requested, use only that one
-        if document_name and document_name in session_docs:
-            quiz_docs = [document_name]
-        else:
-            quiz_docs = session_docs
+        quiz_docs = _session_documents(document_name)
         
         logger.info(f"Generating {num_questions} {difficulty} questions")
         logger.info(f"Using documents: {quiz_docs}")
         
         # Use RAG chain to generate quiz
-        questions = await rag_chain.generate_quiz(num_questions, difficulty, quiz_docs)
+        result = await rag_chain.generate_quiz(num_questions, difficulty, quiz_docs)
+        questions = result["questions"]
         
         return {
             "quiz": questions,
             "total_questions": len(questions),
+            "telemetry": result["telemetry"],
             "difficulty": difficulty,
             "document_name": document_name or "all_documents",
             "generated_at": datetime.now().isoformat()
@@ -340,6 +397,9 @@ async def generate_quiz(quiz_data: dict):
         
     except HTTPException:
         raise
+    except QuizGenerationError as e:
+        logger.error(f"Quiz validation error: {e}")
+        raise HTTPException(status_code=502, detail=str(e))
     except Exception as e:
         logger.error(f"Quiz generation error: {e}")
         raise HTTPException(status_code=500, detail=f"Error generating quiz: {str(e)}")

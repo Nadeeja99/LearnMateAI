@@ -1,8 +1,7 @@
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import API_CONFIG from "@/lib/api";
 import PageHeader from "@/components/app/PageHeader";
 import EmptyState from "@/components/app/EmptyState";
 import { 
@@ -15,299 +14,22 @@ import {
   Loader2,
   Pause
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-
-interface VoiceMessage {
-  id: string;
-  type: "user" | "assistant" | "system";
-  text: string;
-  audio?: string;
-  timestamp: string;
-  isPlaying?: boolean;
-}
-
-/** Server -> client WebSocket message (see backend voice_agent.py) */
-interface VoiceServerMessage {
-  type: "welcome" | "response" | "transcribed" | "error" | "pong";
-  text: string;
-  audio?: string | null;
-  timestamp?: string;
-}
+import { useVoiceAgent } from "@/hooks/use-voice-agent";
 
 interface VoiceChatProps {
   documents: string[];
 }
 
 const VoiceChat = ({ documents }: VoiceChatProps) => {
-  const [isConnected, setIsConnected] = useState(false);
-  const [isListening, setIsListening] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [messages, setMessages] = useState<VoiceMessage[]>([]);
-  const [clientId, setClientId] = useState<string>("");
-  const [isConnecting, setIsConnecting] = useState(false);
-  
-  const websocketRef = useRef<WebSocket | null>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
+  const { isConnected, isConnecting, isListening, isSpeaking, messages, connect, disconnect, startListening, stopListening, stopSpeaking } =
+    useVoiceAgent();
   const scrollRef = useRef<HTMLDivElement>(null);
-  const { toast } = useToast();
-
-  // Generate unique client ID
-  useEffect(() => {
-    setClientId(`voice_client_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
-  }, []);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    const viewport = scrollRef.current?.querySelector("[data-radix-scroll-area-viewport]");
+    if (viewport) viewport.scrollTop = viewport.scrollHeight;
   }, [messages]);
-
-  const connectToVoiceAgent = async () => {
-    if (isConnected) return;
-    
-    setIsConnecting(true);
-    try {
-      const wsUrl = API_CONFIG.ENDPOINTS.VOICE_WS(clientId);
-      websocketRef.current = new WebSocket(wsUrl);
-      
-      websocketRef.current.onopen = () => {
-        setIsConnected(true);
-        setIsConnecting(false);
-        toast({
-          title: "Connected to Voice Agent",
-          description: "You can now start speaking to analyze your documents",
-        });
-      };
-      
-      websocketRef.current.onmessage = (event) => {
-        const message: VoiceServerMessage = JSON.parse(event.data);
-        handleVoiceMessage(message);
-      };
-      
-      websocketRef.current.onclose = () => {
-        setIsConnected(false);
-        setIsListening(false);
-        setIsSpeaking(false);
-        toast({
-          title: "Disconnected from Voice Agent",
-          description: "Voice chat session ended",
-          variant: "destructive",
-        });
-      };
-      
-      websocketRef.current.onerror = (error) => {
-        console.error("WebSocket error:", error);
-        setIsConnecting(false);
-        toast({
-          title: "Connection Error",
-          description: "Failed to connect to voice agent",
-          variant: "destructive",
-        });
-      };
-      
-    } catch (error) {
-      console.error("Error connecting to voice agent:", error);
-      setIsConnecting(false);
-      toast({
-        title: "Connection Error",
-        description: "Failed to connect to voice agent",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const disconnectFromVoiceAgent = () => {
-    if (websocketRef.current) {
-      websocketRef.current.close();
-      websocketRef.current = null;
-    }
-    setIsConnected(false);
-    setIsListening(false);
-    setIsSpeaking(false);
-  };
-
-  const handleVoiceMessage = (message: VoiceServerMessage) => {
-    
-    if (message.type === "transcribed") {
-      // Update the last user message with the actual transcribed text
-      setMessages(prev => {
-        const updated = prev.map((msg, index) => {
-          if (index === prev.length - 1 && (msg.text === "🎤 Listening..." || msg.text === "🎤 Processing...") && msg.type === "user") {
-            return { ...msg, text: message.text };
-          }
-          return msg;
-        });
-        return updated;
-      });
-      return;
-    }
-    
-    const voiceMessage: VoiceMessage = {
-      id: `msg_${Date.now()}`,
-      type: message.type === "welcome" || message.type === "response" ? "assistant" : "system",
-      text: message.text,
-      audio: message.audio,
-      timestamp: message.timestamp || new Date().toISOString(),
-    };
-    
-    setMessages(prev => [...prev, voiceMessage]);
-    
-    // Play audio response if available
-    if (message.audio && message.type === "response") {
-      playAudio(message.audio);
-    }
-  };
-
-
-  const startListening = async () => {
-    if (!isConnected) {
-      await connectToVoiceAgent();
-      return;
-    }
-    
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          sampleRate: 44100
-        } 
-      });
-      
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus'
-      });
-      mediaRecorderRef.current = mediaRecorder;
-      
-      const audioChunks: Blob[] = [];
-      
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunks.push(event.data);
-        }
-      };
-      
-      mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
-        sendAudioToAgent(audioBlob);
-        stream.getTracks().forEach(track => track.stop());
-      };
-      
-      mediaRecorder.start(100); // Collect data every 100ms
-      setIsListening(true);
-      
-      // Add user message placeholder
-      const userMessage: VoiceMessage = {
-        id: `user_${Date.now()}`,
-        type: "user",
-        text: "🎤 Listening...",
-        timestamp: new Date().toISOString(),
-      };
-      setMessages(prev => [...prev, userMessage]);
-      
-    } catch (error) {
-      console.error("Error accessing microphone:", error);
-      toast({
-        title: "Microphone Access Denied",
-        description: "Please allow microphone access to use voice chat",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const stopListening = () => {
-    if (mediaRecorderRef.current && isListening) {
-      mediaRecorderRef.current.stop();
-      setIsListening(false);
-      
-      // Update the last user message that's currently listening
-      setMessages(prev => 
-        prev.map((msg, index) => 
-          index === prev.length - 1 && msg.text === "🎤 Listening..." && msg.type === "user"
-            ? { ...msg, text: "🎤 Processing..." }
-            : msg
-        )
-      );
-    }
-  };
-
-  const sendAudioToAgent = async (audioBlob: Blob) => {
-    try {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64Audio = reader.result?.toString().split(',')[1];
-        if (base64Audio && websocketRef.current) {
-          websocketRef.current.send(JSON.stringify({
-            type: "voice",
-            audio: base64Audio,
-            timestamp: new Date().toISOString()
-          }));
-        }
-      };
-      reader.readAsDataURL(audioBlob);
-    } catch (error) {
-      console.error("Error sending audio:", error);
-    }
-  };
-
-
-  const playAudio = async (base64Audio: string) => {
-    try {
-      setIsSpeaking(true);
-      
-      if (base64Audio) {
-        // Decode and play the actual audio from the server
-        const audioBytes = atob(base64Audio);
-        const audioArray = new Uint8Array(audioBytes.length);
-        for (let i = 0; i < audioBytes.length; i++) {
-          audioArray[i] = audioBytes.charCodeAt(i);
-        }
-        
-        const audioBlob = new Blob([audioArray], { type: 'audio/mpeg' });
-        const audioUrl = URL.createObjectURL(audioBlob);
-        
-        const audio = new Audio(audioUrl);
-        audio.onended = () => {
-          setIsSpeaking(false);
-          URL.revokeObjectURL(audioUrl);
-        };
-        audio.onerror = () => {
-          setIsSpeaking(false);
-          URL.revokeObjectURL(audioUrl);
-        };
-        
-        await audio.play();
-      } else {
-        // Fallback to browser speech synthesis
-        const utterance = new SpeechSynthesisUtterance();
-        utterance.text = messages[messages.length - 1]?.text || "Response received";
-        utterance.onend = () => setIsSpeaking(false);
-        utterance.onerror = () => setIsSpeaking(false);
-        
-        speechSynthesis.speak(utterance);
-      }
-      
-    } catch (error) {
-      console.error("Error playing audio:", error);
-      setIsSpeaking(false);
-      
-      // Fallback to browser speech synthesis
-      try {
-        const utterance = new SpeechSynthesisUtterance();
-        utterance.text = messages[messages.length - 1]?.text || "Response received";
-        utterance.onend = () => setIsSpeaking(false);
-        utterance.onerror = () => setIsSpeaking(false);
-        
-        speechSynthesis.speak(utterance);
-      } catch (fallbackError) {
-        console.error("Fallback audio also failed:", fallbackError);
-        setIsSpeaking(false);
-      }
-    }
-  };
-
 
   const statusText = isListening
     ? "Listening… speak now"
@@ -337,7 +59,7 @@ const VoiceChat = ({ documents }: VoiceChatProps) => {
               {isConnected ? "Connected" : "Disconnected"}
             </span>
             {isConnected && (
-              <Button variant="outline" size="sm" onClick={disconnectFromVoiceAgent}>
+              <Button variant="outline" size="sm" onClick={disconnect}>
                 <PhoneOff />
                 Disconnect
               </Button>
@@ -350,7 +72,7 @@ const VoiceChat = ({ documents }: VoiceChatProps) => {
       <Card className="mb-4 p-6">
         <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
           {!isConnected ? (
-            <Button onClick={connectToVoiceAgent} disabled={isConnecting} size="lg" className="w-full sm:w-auto">
+            <Button onClick={connect} disabled={isConnecting} size="lg" className="w-full sm:w-auto">
               {isConnecting ? (
                 <>
                   <Loader2 className="animate-spin" />
@@ -386,7 +108,7 @@ const VoiceChat = ({ documents }: VoiceChatProps) => {
               </Button>
 
               <Button
-                onClick={() => setIsSpeaking(false)}
+                onClick={stopSpeaking}
                 disabled={!isSpeaking}
                 variant="outline"
                 size="lg"

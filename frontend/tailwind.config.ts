@@ -1,6 +1,7 @@
 import type { Config } from "tailwindcss";
 import defaultTheme from "tailwindcss/defaultTheme";
 import animate from "tailwindcss-animate";
+import typography from "@tailwindcss/typography";
 
 export default {
   darkMode: ["class"],
@@ -71,6 +72,37 @@ export default {
           foreground: "hsl(var(--warning-foreground))",
         },
       },
+      typography: {
+        // Prose colors follow the theme tokens, so no dark:prose-invert is needed
+        DEFAULT: {
+          css: {
+            "--tw-prose-body": "hsl(var(--foreground) / 0.9)",
+            "--tw-prose-headings": "hsl(var(--foreground))",
+            "--tw-prose-lead": "hsl(var(--muted-foreground))",
+            "--tw-prose-links": "hsl(var(--primary))",
+            "--tw-prose-bold": "hsl(var(--foreground))",
+            "--tw-prose-counters": "hsl(var(--muted-foreground))",
+            "--tw-prose-bullets": "hsl(var(--muted-foreground) / 0.6)",
+            "--tw-prose-hr": "hsl(var(--border))",
+            "--tw-prose-quotes": "hsl(var(--foreground))",
+            "--tw-prose-quote-borders": "hsl(var(--border))",
+            "--tw-prose-captions": "hsl(var(--muted-foreground))",
+            "--tw-prose-code": "hsl(var(--foreground))",
+            "--tw-prose-th-borders": "hsl(var(--border))",
+            "--tw-prose-td-borders": "hsl(var(--border))",
+            "code::before": { content: "none" },
+            "code::after": { content: "none" },
+            ":not(pre) > code": {
+              fontWeight: "500",
+              fontSize: "0.85em",
+              backgroundColor: "hsl(var(--muted))",
+              border: "1px solid hsl(var(--border))",
+              borderRadius: "0.3rem",
+              padding: "0.1rem 0.3rem",
+            },
+          },
+        },
+      },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
@@ -102,5 +134,5 @@ export default {
       },
     },
   },
-  plugins: [animate],
+  plugins: [animate, typography],
 } satisfies Config;

@@ -1,5 +1,7 @@
 // API Configuration
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+// ws:// for http:// backends (local dev), wss:// for https://
+const WS_BASE_URL = API_BASE_URL.replace(/^http/, 'ws');
 
 export const API_CONFIG = {
   BASE_URL: API_BASE_URL,
@@ -7,6 +9,8 @@ export const API_CONFIG = {
     UPLOAD: `${API_BASE_URL}/upload`,
     SUMMARIZE: `${API_BASE_URL}/summarize`,
     ASK: `${API_BASE_URL}/ask`,
+    ASK_STREAM: `${API_BASE_URL}/ask/stream`,
+    SUMMARIZE_STREAM: `${API_BASE_URL}/summarize/stream`,
     QUIZ: `${API_BASE_URL}/generate-quiz`,
     DOCUMENTS: `${API_BASE_URL}/documents`,
     CURRENT_SESSION_DOCUMENTS: `${API_BASE_URL}/current-session-documents`,
@@ -18,7 +22,7 @@ export const API_CONFIG = {
     ANALYTICS_GLOBAL: `${API_BASE_URL}/analytics/global`,
     ANALYTICS_PERFORMANCE: `${API_BASE_URL}/analytics/performance-metrics`,
     TRACK_QUIZ: `${API_BASE_URL}/analytics/track-quiz`,
-    VOICE_WS: (clientId: string) => `wss://${API_BASE_URL.replace('http://', '').replace('https://', '')}/voice/ws/${clientId}`,
+    VOICE_WS: (clientId: string) => `${WS_BASE_URL}/voice/ws/${clientId}`,
     VOICE_STATUS: `${API_BASE_URL}/voice/status`,
     VOICE_CONNECTIONS: `${API_BASE_URL}/voice/connections`,
     VOICE_TEST: `${API_BASE_URL}/voice/test`,

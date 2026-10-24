@@ -1,14 +1,14 @@
 {
   "default": {
     "user_id": "default",
-    "total_sessions": 10,
-    "total_documents_uploaded": 3,
+    "total_sessions": 11,
+    "total_documents_uploaded": 4,
     "total_questions_asked": 0,
     "total_summaries_generated": 2,
     "total_quizzes_taken": 1,
     "total_chat_messages": 3,
     "learning_streak_days": 1,
-    "last_activity": "2026-10-24T13:02:28.066916",
+    "last_activity": "2026-10-24T13:28:20.200871",
     "preferred_document_types": null,
     "learning_patterns": null
   }

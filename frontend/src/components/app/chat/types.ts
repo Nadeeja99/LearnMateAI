@@ -1,3 +1,5 @@
+import type { Telemetry } from "@/lib/telemetry";
+
 export interface Message {
   id: string;
   role: "user" | "assistant";
@@ -5,6 +7,9 @@ export interface Message {
   sources?: string[];
   timestamp: string;
   metadata?: Record<string, unknown>;
+  telemetry?: Telemetry;
+  /** "streaming" while tokens arrive; "stopped" for a partial reply that was cancelled or failed. */
+  status?: "streaming" | "stopped";
 }
 
 export interface Conversation {
@@ -15,10 +20,4 @@ export interface Conversation {
   updated_at: string;
   document_context: string[];
   summary?: string;
-}
-
-export interface AskResponse {
-  answer: string;
-  sources?: string[];
-  conversation_id: string;
 }

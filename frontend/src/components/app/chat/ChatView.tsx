@@ -3,18 +3,13 @@ import { History, Plus, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useToast } from "@/hooks/use-toast";
-import { useAbortController } from "@/hooks/use-abort-controller";
-import { useConversations } from "@/hooks/use-conversations";
-import API_CONFIG from "@/lib/api";
-import { errorText, isAbortError, requestJson } from "@/lib/http";
+import { useChatSession } from "@/hooks/use-chat-session";
 import PageHeader from "@/components/app/PageHeader";
 import EmptyState from "@/components/app/EmptyState";
 import InlineError from "@/components/app/InlineError";
 import { ChatMessage, MessageListSkeleton, TypingIndicator } from "./ChatMessage";
 import ChatComposer from "./ChatComposer";
 import ConversationHistory from "./ConversationHistory";
-import type { AskResponse, Message } from "./types";
 
 const SAMPLE_QUESTIONS = [
   "What are the main topics covered?",
@@ -27,118 +22,21 @@ interface ChatViewProps {
   documents: string[];
 }
 
-interface Failure {
-  question: string;
-  message: string;
-  aborted: boolean;
-}
-
 const ChatView = ({ documents }: ChatViewProps) => {
-  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [isLoadingConversation, setIsLoadingConversation] = useState(false);
-  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [showConversations, setShowConversations] = useState(false);
-  const [failure, setFailure] = useState<Failure | null>(null);
-  const history = useConversations();
-  const request = useAbortController();
   const scrollRef = useRef<HTMLDivElement>(null);
   const composerRef = useRef<HTMLTextAreaElement>(null);
-  const { toast } = useToast();
   const hasDocuments = documents.length > 0;
+  const { messages, isLoading, isLoadingConversation, currentConversationId, failure, history, createNewConversation, loadConversation, ask, stop } =
+    useChatSession(documents, { onSettled: () => composerRef.current?.focus() });
+
+  const currentTitle = history.conversations.find((conv) => conv.id === currentConversationId)?.title;
 
   useEffect(() => {
     const viewport = scrollRef.current?.querySelector("[data-radix-scroll-area-viewport]");
     if (viewport) viewport.scrollTop = viewport.scrollHeight;
-  }, [messages, isLoading, failure]);
-
-  /** Creates a conversation and returns its id, or null on failure. */
-  const createNewConversation = async (announce: boolean): Promise<string | null> => {
-    try {
-      const data = await requestJson<{ conversation_id: string }>(API_CONFIG.ENDPOINTS.CONVERSATIONS, {
-        method: "POST",
-        json: { user_id: "default", title: `Chat ${new Date().toLocaleString()}`, document_context: documents },
-      });
-      setCurrentConversationId(data.conversation_id);
-      setMessages([]);
-      setFailure(null);
-      history.reload();
-      if (announce) {
-        toast({ title: "New conversation started", description: "You can now ask questions with full conversation context" });
-        composerRef.current?.focus();
-      }
-      return data.conversation_id;
-    } catch (error) {
-      toast({ title: "Couldn't start a conversation", description: errorText(error), variant: "destructive" });
-      return null;
-    }
-  };
-
-  const loadConversation = async (conversationId: string) => {
-    setShowConversations(false);
-    setFailure(null);
-    setIsLoadingConversation(true);
-    try {
-      const data = await requestJson<{ history?: Message[] }>(API_CONFIG.ENDPOINTS.CONVERSATION_HISTORY(conversationId));
-      setCurrentConversationId(conversationId);
-      setMessages(data.history || []);
-    } catch (error) {
-      toast({ title: "Couldn't load conversation", description: errorText(error), variant: "destructive" });
-    } finally {
-      setIsLoadingConversation(false);
-    }
-  };
-
-  /** Sends a question. Retries reuse the user message already in the list. */
-  const ask = async (question: string, isRetry = false) => {
-    if (!question.trim() || isLoading) return;
-    if (!hasDocuments) {
-      toast({ title: "No documents uploaded", description: "Please upload a document first to start chatting", variant: "destructive" });
-      return;
-    }
-
-    setFailure(null);
-    const conversationId = currentConversationId ?? (await createNewConversation(false));
-    if (!conversationId) return;
-
-    if (!isRetry) {
-      setMessages((prev) => [...prev, { id: `msg_${Date.now()}`, role: "user", content: question, timestamp: new Date().toISOString() }]);
-      setInput("");
-    }
-
-    setIsLoading(true);
-    try {
-      const data = await requestJson<AskResponse>(API_CONFIG.ENDPOINTS.ASK, {
-        method: "POST",
-        signal: request.begin(),
-        json: { question, user_id: "default", conversation_id: conversationId },
-      });
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `msg_${Date.now()}_assistant`,
-          role: "assistant",
-          content: data.answer,
-          sources: data.sources || [],
-          timestamp: new Date().toISOString(),
-          metadata: { conversation_id: data.conversation_id },
-        },
-      ]);
-      history.reload();
-    } catch (error) {
-      const aborted = isAbortError(error);
-      setFailure({ question, aborted, message: aborted ? "" : errorText(error, "Failed to get a response.") });
-    } finally {
-      setIsLoading(false);
-      composerRef.current?.focus();
-    }
-  };
-
-  const handleCopy = (content: string) => {
-    navigator.clipboard.writeText(content);
-    toast({ title: "Copied!", description: "Message copied to clipboard" });
-  };
+  }, [messages, failure]);
 
   const handleSampleQuestion = (question: string) => {
     setInput(question);
@@ -153,9 +51,7 @@ const ChatView = ({ documents }: ChatViewProps) => {
           hasDocuments ? (
             <>
               Chatting about <span className="font-medium text-foreground">{documents[documents.length - 1]}</span>
-              {currentConversationId && (
-                <span className="ml-2 text-muted-foreground">· Conversation {currentConversationId.split("_").slice(-1)[0]}</span>
-              )}
+              {currentTitle && <span className="ml-2 text-muted-foreground">· {currentTitle}</span>}
             </>
           ) : (
             "Upload a document to start chatting"
@@ -182,7 +78,10 @@ const ChatView = ({ documents }: ChatViewProps) => {
           isLoading={history.isLoading}
           error={history.error}
           currentId={currentConversationId}
-          onSelect={loadConversation}
+          onSelect={(id) => {
+            setShowConversations(false);
+            loadConversation(id);
+          }}
           onRetry={history.reload}
           onClose={() => setShowConversations(false)}
         />
@@ -215,16 +114,19 @@ const ChatView = ({ documents }: ChatViewProps) => {
             </EmptyState>
           ) : (
             <div className="space-y-6 p-4 sm:p-6">
-              {messages.map((message, index) => (
-                <ChatMessage key={message.id ?? index} message={message} onCopy={handleCopy} />
-              ))}
-              {isLoading && <TypingIndicator />}
+              {messages.map((message, index) =>
+                message.status === "streaming" && !message.content ? (
+                  <TypingIndicator key={message.id} />
+                ) : (
+                  <ChatMessage key={message.id ?? index} message={message} />
+                ),
+              )}
               {failure && (
                 <InlineError
                   tone={failure.aborted ? "muted" : "error"}
                   title={failure.aborted ? "Response stopped" : "Couldn't get a response"}
                   message={failure.message || undefined}
-                  onRetry={() => ask(failure.question, true)}
+                  onRetry={() => ask(failure.question, { isRetry: true })}
                   retryLabel={failure.aborted ? "Ask again" : "Retry"}
                 />
               )}
@@ -237,8 +139,8 @@ const ChatView = ({ documents }: ChatViewProps) => {
         ref={composerRef}
         value={input}
         onChange={setInput}
-        onSubmit={() => ask(input)}
-        onStop={request.abort}
+        onSubmit={() => ask(input, { onAccepted: () => setInput("") })}
+        onStop={stop}
         isBusy={isLoading}
         disabled={!hasDocuments}
       />

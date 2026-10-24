@@ -133,3 +133,94 @@
     }
   }
 }
+
+/* Streaming caret after the last rendered text block (or last list item) */
+.md-streaming > :is(p, h1, h2, h3, h4, h5, h6, blockquote):last-child::after,
+.md-streaming > :is(ul, ol):last-child > li:last-child::after {
+  content: "";
+  display: inline-block;
+  width: 0.45em;
+  height: 1.05em;
+  margin-left: 0.15em;
+  vertical-align: text-bottom;
+  border-radius: 1px;
+  background: hsl(var(--primary));
+  animation: caret-blink 1s steps(2, start) infinite;
+}
+
+@keyframes caret-blink {
+  to {
+    visibility: hidden;
+  }
+}
+
+/* Syntax highlighting (highlight.js classes), tuned to the theme tokens.
+ Deliberately outside @layer: Tailwind purges layered rules whose classes never appear
+ in source, and highlight.js adds these at runtime. */
+.hljs-comment,
+.hljs-quote {
+  @apply italic text-muted-foreground;
+}
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-literal,
+.hljs-type,
+.hljs-built_in {
+  color: hsl(262 60% 50%);
+}
+.hljs-string,
+.hljs-regexp,
+.hljs-addition,
+.hljs-attribute {
+  color: hsl(142 55% 32%);
+}
+.hljs-number,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-variable,
+.hljs-template-variable {
+  color: hsl(24 85% 42%);
+}
+.hljs-title,
+.hljs-section,
+.hljs-function .hljs-title {
+  color: hsl(var(--primary));
+}
+.hljs-attr,
+.hljs-property,
+.hljs-meta,
+.hljs-name,
+.hljs-tag {
+  color: hsl(199 80% 38%);
+}
+.hljs-deletion {
+  @apply text-destructive;
+}
+
+.dark .hljs-keyword,
+.dark .hljs-selector-tag,
+.dark .hljs-literal,
+.dark .hljs-type,
+.dark .hljs-built_in {
+  color: hsl(262 80% 75%);
+}
+.dark .hljs-string,
+.dark .hljs-regexp,
+.dark .hljs-addition,
+.dark .hljs-attribute {
+  color: hsl(142 50% 62%);
+}
+.dark .hljs-number,
+.dark .hljs-symbol,
+.dark .hljs-bullet,
+.dark .hljs-variable,
+.dark .hljs-template-variable {
+  color: hsl(28 90% 65%);
+}
+.dark .hljs-attr,
+.dark .hljs-property,
+.dark .hljs-meta,
+.dark .hljs-name,
+.dark .hljs-tag {
+  color: hsl(199 80% 68%);
+}

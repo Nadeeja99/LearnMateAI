@@ -16,9 +16,10 @@ export const isAbortError = (error: unknown): boolean => error instanceof DOMExc
 export const errorText = (error: unknown, fallback = "Something went wrong. Please try again."): string =>
   error instanceof Error && error.message ? error.message : fallback;
 
-type RequestOptions = Omit<RequestInit, "body"> & { json?: unknown; body?: BodyInit };
+export type RequestOptions = Omit<RequestInit, "body"> & { json?: unknown; body?: BodyInit };
 
-export async function requestJson<T>(url: string, { json, headers, body, ...init }: RequestOptions = {}): Promise<T> {
+/** fetch() that throws ApiError for network failures and non-2xx responses (AbortError passes through). */
+export async function fetchChecked(url: string, { json, headers, body, ...init }: RequestOptions = {}): Promise<Response> {
   let response: Response;
   try {
     response = await fetch(url, {
@@ -34,6 +35,11 @@ export async function requestJson<T>(url: string, { json, headers, body, ...init
   if (!response.ok) {
     throw new ApiError(await readErrorDetail(response), response.status);
   }
+  return response;
+}
+
+export async function requestJson<T>(url: string, options: RequestOptions = {}): Promise<T> {
+  const response = await fetchChecked(url, options);
   return (await response.json()) as T;
 }
 

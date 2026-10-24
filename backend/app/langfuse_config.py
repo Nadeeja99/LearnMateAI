@@ -72,6 +72,21 @@ class LangfuseConfig:
             logger.error(f"Failed to create LangFuse trace: {e}")
             return None
     
+    def start_span(self, name: str, **kwargs):
+        """Start a detached span that the caller must end().
+
+        Unlike create_trace this does not bind the span to the current context,
+        so it is safe to hold open across yields in an async generator.
+        """
+        if not self.is_enabled():
+            return None
+
+        try:
+            return self.client.start_span(name=name, **kwargs)
+        except Exception as e:
+            logger.error(f"Failed to start LangFuse span: {e}")
+            return None
+
     def flush(self):
         """Flush pending traces to LangFuse"""
         if self.is_enabled():

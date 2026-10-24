@@ -133,5 +133,18 @@
       "score_percentage": 25,
       "completed_at": "2026-10-24T07:32:28.061Z"
     }
+  },
+  {
+    "id": "session_20261024_132820_200812",
+    "user_id": "default",
+    "session_type": "upload",
+    "document_name": "AKILA_PERERA_CV.pdf",
+    "duration_seconds": 0,
+    "timestamp": "2026-10-24T13:28:20.200855",
+    "metadata": {
+      "file_size": 58835,
+      "chunks_count": 3,
+      "file_type": "pdf"
+    }
   }
 ]

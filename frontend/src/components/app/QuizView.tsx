@@ -9,15 +9,12 @@ import InlineError from "@/components/app/InlineError";
 import QuizSetup, { QuizSkeleton } from "@/components/app/quiz/QuizSetup";
 import QuizQuestion from "@/components/app/quiz/QuizQuestion";
 import QuizResult from "@/components/app/quiz/QuizResult";
-import type { Question } from "@/components/app/quiz/types";
+import { quizResponseSchema, type Question } from "@/components/app/quiz/types";
+import TelemetryPanel from "@/components/ai/TelemetryPanel";
+import type { Telemetry } from "@/lib/telemetry";
 
 interface QuizViewProps {
   documents: string[];
-}
-
-interface QuizResponse {
-  quiz: Question[];
-  total_questions: number;
 }
 
 const QuizView = ({ documents }: QuizViewProps) => {
@@ -26,6 +23,7 @@ const QuizView = ({ documents }: QuizViewProps) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [telemetry, setTelemetry] = useState<Telemetry>();
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [showAnswer, setShowAnswer] = useState(false);
   const [score, setScore] = useState(0);
@@ -43,15 +41,19 @@ const QuizView = ({ documents }: QuizViewProps) => {
     setIsGenerating(true);
     setError(null);
     try {
-      const data = await requestJson<QuizResponse>(API_CONFIG.ENDPOINTS.QUIZ, {
+      const response = await requestJson<unknown>(API_CONFIG.ENDPOINTS.QUIZ, {
         method: "POST",
         signal: request.begin(),
         json: { num_questions: numQuestions[0], difficulty },
       });
-      if (!data.quiz?.length) {
-        throw new Error("The model didn't return any questions. Try again or lower the question count.");
+      // Validate before rendering: a malformed question would otherwise break the quiz mid-way
+      const parsed = quizResponseSchema.safeParse(response);
+      if (!parsed.success) {
+        console.error("Invalid quiz response", parsed.error.issues);
+        throw new Error(parsed.error.issues[0]?.message ?? "The server returned an invalid quiz.");
       }
-      setQuestions(data.quiz);
+      setQuestions(parsed.data.quiz);
+      setTelemetry(parsed.data.telemetry);
       setCurrentQuestion(0);
       setScore(0);
       setShowAnswer(false);
@@ -158,6 +160,7 @@ const QuizView = ({ documents }: QuizViewProps) => {
         onSubmit={handleSubmit}
         onNext={handleNext}
       />
+      {telemetry && <TelemetryPanel telemetry={telemetry} className="mt-4" />}
     </div>
   );
 };
