@@ -2,7 +2,7 @@ import os
 import logging
 import io
 from datetime import datetime
-from fastapi import FastAPI, File, UploadFile, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import Depends, FastAPI, File, UploadFile, HTTPException, WebSocket, WebSocketDisconnect, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 from dotenv import load_dotenv
@@ -12,7 +12,7 @@ import json
 
 # Import our RAG modules
 from .document_processor import DocumentProcessor
-from .vector_store import VectorStore
+from .sessions import SessionStoreRegistry, is_valid_session_id, require_session_id
 from .rag_chain import RAGChain
 from .langfuse_config import langfuse_config
 from .conversation_memory import conversation_memory
@@ -68,13 +68,16 @@ app.add_middleware(
 
 # Global variables for RAG system
 document_processor = None
-vector_store = None
+session_stores = None  # Per-session vector stores (see sessions.py)
 rag_chain = None
-current_session_documents = {}  # Track documents uploaded in current session
+
+def _chain(session_id: str) -> RAGChain:
+    """The RAG chain bound to one session's documents"""
+    return rag_chain.with_store(session_stores.get(session_id))
 
 def initialize_rag_system():
     """Initialize the RAG system components"""
-    global document_processor, vector_store, rag_chain, voice_agent, voice_processing_service
+    global document_processor, session_stores, rag_chain, voice_agent, voice_processing_service
     
     try:
         openai_api_key = os.getenv("OPENAI_API_KEY")
@@ -83,17 +86,18 @@ def initialize_rag_system():
         
         # Initialize components
         document_processor = DocumentProcessor()
-        vector_store = VectorStore(openai_api_key)
-        rag_chain = RAGChain(openai_api_key, vector_store)
+        session_stores = SessionStoreRegistry(openai_api_key)
+        # Unbound chain; each request binds it to the caller's store via _chain(session_id)
+        rag_chain = RAGChain(openai_api_key, vector_store=None)
         
         # Initialize voice processing service
         voice_processing_service = VoiceProcessingService(openai_api_key)
         
         # Initialize voice agent
-        voice_agent = VoiceAgent(rag_chain, voice_processing_service)
+        voice_agent = VoiceAgent(rag_chain, voice_processing_service, chain_for_session=_chain)
         
-        # Clear any existing vector store to start fresh
-        vector_store.clear_store()
+        # Documents persist across restarts; only sessions idle past the TTL are removed
+        session_stores.cleanup_expired(float(os.getenv("SESSION_TTL_DAYS", "30")))
         
         # Log LangFuse status
         if langfuse_config.is_enabled():
@@ -101,7 +105,7 @@ def initialize_rag_system():
         else:
             logger.info("LangFuse observability disabled")
         
-        logger.info("RAG system initialized successfully with fresh vector store")
+        logger.info("RAG system initialized successfully")
         
     except Exception as e:
         logger.error(f"Failed to initialize RAG system: {e}")
@@ -119,19 +123,31 @@ async def global_exception_handler(request, exc):
         content={"detail": f"Internal server error: {str(exc)}"}
     )
 
-def _session_documents(document_name: str = None):
-    """Documents in the current session, narrowed to document_name when it is one of them"""
-    session_docs = list(current_session_documents.keys()) if current_session_documents else None
+def _store(session_id: str):
+    return session_stores.get(session_id)
+
+def _session_documents(store, document_name: str = None):
+    """The session's documents, narrowed to document_name when it is one of them"""
+    session_docs = list(store.document_summaries().keys()) or None
     if document_name and session_docs and document_name in session_docs:
         return [document_name]
     return session_docs
 
-def _require_documents():
-    if not vector_store.has_documents():
+def _require_documents(store):
+    if not store.has_documents():
         raise HTTPException(
             status_code=400,
             detail="No documents uploaded yet. Please upload a document first."
         )
+
+def _require_own_conversation(conversation_id: str, session_id: str):
+    """404 for conversations that don't exist or belong to another session"""
+    if conversation_id and conversation_id != "default" and not conversation_memory.owns(conversation_id, session_id):
+        raise HTTPException(status_code=404, detail="Conversation not found")
+
+def _require_self(user_id: str, session_id: str):
+    if user_id != session_id:
+        raise HTTPException(status_code=403, detail="You can only access your own data")
 
 def _sse(event: str, data: dict) -> str:
     return f"event: {event}\ndata: {json.dumps(data, default=str)}\n\n"
@@ -169,8 +185,8 @@ async def health_check():
 
 # Upload Document
 @app.post("/upload")
-async def upload_document(file: UploadFile = File(...)):
-    """Upload and process a document using RAG system"""
+async def upload_document(file: UploadFile = File(...), session_id: str = Depends(require_session_id)):
+    """Upload and process a document into the caller's session"""
     try:
         if not file.filename.lower().endswith('.pdf'):
             raise HTTPException(status_code=400, detail="Only PDF files are supported")
@@ -182,23 +198,22 @@ async def upload_document(file: UploadFile = File(...)):
         
         # Process document with RAG system
         documents = document_processor.process_document(file.filename, content)
+        uploaded_at = datetime.now().isoformat()
+        for doc in documents:
+            doc.metadata["uploaded_at"] = uploaded_at
         
-        # Add to vector store
-        vector_store.add_documents(documents)
-        
-        # Track in current session
-        current_session_documents[file.filename] = {
-            "filename": file.filename,
-            "chunks_count": len(documents),
-            "uploaded_at": datetime.now().isoformat()
-        }
+        # Re-uploading a file replaces it instead of duplicating its chunks
+        store = _store(session_id)
+        if file.filename in store.document_summaries():
+            store.delete_document(file.filename)
+        store.add_documents(documents)
         
         logger.info(f"Document {file.filename} processed and added to vector store successfully")
         
         # Track analytics for upload
         if learning_analytics:
             learning_analytics.track_session(
-                user_id="default",  # Could be passed from frontend
+                user_id=session_id,
                 session_type="upload",
                 document_name=file.filename,
                 duration_seconds=0,
@@ -215,7 +230,7 @@ async def upload_document(file: UploadFile = File(...)):
                 "status": "success",
                 "file_name": file.filename,
                 "chunks_created": len(documents),
-                "total_documents": len(vector_store.get_all_documents())
+                "total_documents": len(store.get_all_documents())
             }
         }
         
@@ -227,35 +242,26 @@ async def upload_document(file: UploadFile = File(...)):
 
 # Ask Question
 @app.post("/ask")
-async def ask_question(question_data: dict):
+async def ask_question(question_data: dict, session_id: str = Depends(require_session_id)):
     """Ask a question using RAG system"""
     try:
         question = question_data.get("question", "").strip()
         if not question:
             raise HTTPException(status_code=400, detail="Question is required")
         
-        if not vector_store.has_documents():
-            raise HTTPException(
-                status_code=400, 
-                detail="No documents uploaded yet. Please upload a document first."
-            )
+        store = _store(session_id)
+        _require_documents(store)
+        conversation_id = question_data.get("conversation_id", "default")
+        _require_own_conversation(conversation_id, session_id)
         
         logger.info(f"Processing question: {question[:100]}...")
         
-        # Get current session document names
-        session_docs = _session_documents()
-        logger.info(f"Using documents from current session: {session_docs}")
-        
-        # Get user_id and conversation_id from request
-        user_id = question_data.get("user_id", "default")
-        conversation_id = question_data.get("conversation_id", "default")
-        
         # Use RAG chain to answer question with conversation memory
-        result = await rag_chain.answer_question(
+        result = await _chain(session_id).answer_question(
             question=question, 
-            document_names=session_docs,
+            document_names=_session_documents(store),
             conversation_id=conversation_id,
-            user_id=user_id
+            user_id=session_id
         )
         
         return result
@@ -268,42 +274,46 @@ async def ask_question(question_data: dict):
 
 # Ask Question (streaming)
 @app.post("/ask/stream")
-async def ask_question_stream(question_data: dict):
+async def ask_question_stream(question_data: dict, session_id: str = Depends(require_session_id)):
     """Stream an answer as SSE events: meta, token*, done (or error)"""
     question = (question_data.get("question") or "").strip()
     if not question:
         raise HTTPException(status_code=400, detail="Question is required")
-    _require_documents()
+    store = _store(session_id)
+    _require_documents(store)
+    conversation_id = question_data.get("conversation_id", "default")
+    _require_own_conversation(conversation_id, session_id)
 
     logger.info(f"Streaming answer for: {question[:100]}...")
-    events = rag_chain.stream_answer(
+    events = _chain(session_id).stream_answer(
         question=question,
-        document_names=_session_documents(),
-        conversation_id=question_data.get("conversation_id", "default"),
-        user_id=question_data.get("user_id", "default"),
+        document_names=_session_documents(store),
+        conversation_id=conversation_id,
+        user_id=session_id,
     )
     return _event_stream(events, "Answer generation")
 
 # List Documents
 @app.get("/documents")
-async def list_documents():
-    """List all processed documents"""
+async def list_documents(session_id: str = Depends(require_session_id)):
+    """List the caller's processed documents"""
     try:
-        documents = vector_store.get_all_documents()
-        
-        doc_list = []
-        for doc in documents:
-            metadata = doc.metadata
-            doc_list.append({
-                "filename": metadata["source"],
-                "file_size": f"{metadata['file_size'] / (1024 * 1024):.1f}MB",
-                "text_length": metadata["text_length"]
-            })
+        store = _store(session_id)
+        summaries = store.document_summaries().values()
+        doc_list = [
+            {
+                "filename": summary["filename"],
+                "file_size": f"{(summary['file_size'] or 0) / (1024 * 1024):.1f}MB",
+                "chunks_count": summary["chunks_count"],
+                "uploaded_at": summary["uploaded_at"],
+            }
+            for summary in summaries
+        ]
         
         return {
             "documents": doc_list,
             "total": len(doc_list),
-            "total_chunks": len(documents)
+            "total_chunks": len(store.get_all_documents())
         }
     except Exception as e:
         logger.error(f"List documents error: {e}")
@@ -311,27 +321,18 @@ async def list_documents():
 
 # Generate Summary
 @app.post("/summarize")
-async def generate_summary(summary_data: dict):
+async def generate_summary(summary_data: dict, session_id: str = Depends(require_session_id)):
     """Generate a summary using RAG system"""
     try:
-        if not vector_store.has_documents():
-            raise HTTPException(
-                status_code=400,
-                detail="No documents uploaded yet. Please upload a document first."
-            )
-        
+        store = _store(session_id)
+        _require_documents(store)
         document_name = summary_data.get("document_name")
-        
-        # Get current session document names
-        summary_docs = _session_documents(document_name)
+        summary_docs = _session_documents(store, document_name)
         
         logger.info(f"Generating summary for: {summary_docs or 'all documents'}")
         
-        # Get user_id from request
-        user_id = summary_data.get("user_id", "default")
-        
         # Use RAG chain to generate summary with analytics
-        summary = await rag_chain.generate_summary(summary_docs, user_id=user_id)
+        summary = await _chain(session_id).generate_summary(summary_docs, user_id=session_id)
         
         return {
             "summary": summary,
@@ -347,24 +348,22 @@ async def generate_summary(summary_data: dict):
 
 # Generate Summary (streaming)
 @app.post("/summarize/stream")
-async def generate_summary_stream(summary_data: dict):
+async def generate_summary_stream(summary_data: dict, session_id: str = Depends(require_session_id)):
     """Stream a Markdown summary as SSE events: meta, token*, done (or error)"""
-    _require_documents()
-    summary_docs = _session_documents(summary_data.get("document_name"))
+    store = _store(session_id)
+    _require_documents(store)
+    summary_docs = _session_documents(store, summary_data.get("document_name"))
     logger.info(f"Streaming summary for: {summary_docs or 'all documents'}")
-    events = rag_chain.stream_summary(summary_docs, user_id=summary_data.get("user_id", "default"))
+    events = _chain(session_id).stream_summary(summary_docs, user_id=session_id)
     return _event_stream(events, "Summary generation")
 
 # Generate Quiz
 @app.post("/generate-quiz")
-async def generate_quiz(quiz_data: dict):
+async def generate_quiz(quiz_data: dict, session_id: str = Depends(require_session_id)):
     """Generate a quiz using RAG system"""
     try:
-        if not vector_store.has_documents():
-            raise HTTPException(
-                status_code=400,
-                detail="No documents uploaded yet. Please upload a document first."
-            )
+        store = _store(session_id)
+        _require_documents(store)
         
         num_questions = quiz_data.get("num_questions", 5)
         difficulty = quiz_data.get("difficulty", "medium")
@@ -377,13 +376,13 @@ async def generate_quiz(quiz_data: dict):
             )
         
         # Get current session document names
-        quiz_docs = _session_documents(document_name)
+        quiz_docs = _session_documents(store, document_name)
         
         logger.info(f"Generating {num_questions} {difficulty} questions")
         logger.info(f"Using documents: {quiz_docs}")
         
         # Use RAG chain to generate quiz
-        result = await rag_chain.generate_quiz(num_questions, difficulty, quiz_docs)
+        result = await _chain(session_id).generate_quiz(num_questions, difficulty, quiz_docs)
         questions = result["questions"]
         
         return {
@@ -406,19 +405,11 @@ async def generate_quiz(quiz_data: dict):
 
 # Delete Specific Document
 @app.delete("/documents/{filename}")
-async def delete_document(filename: str):
-    """Delete a specific document from the vector store and current session"""
+async def delete_document(filename: str, session_id: str = Depends(require_session_id)):
+    """Delete a specific document from the caller's session"""
     try:
-        global current_session_documents
-        
-        # Remove from current session documents
-        if filename in current_session_documents:
-            del current_session_documents[filename]
-            logger.info(f"Document {filename} removed from current session")
-        
-        # Remove from vector store
-        vector_store.delete_document(filename)
-        logger.info(f"Document {filename} deleted from vector store")
+        _store(session_id).delete_document(filename)
+        logger.info(f"Document {filename} deleted from session store")
         
         return {
             "message": f"Document '{filename}' deleted successfully",
@@ -431,13 +422,11 @@ async def delete_document(filename: str):
 
 # Clear Vector Store
 @app.delete("/clear-documents")
-async def clear_documents():
-    """Clear all documents from the vector store and current session"""
+async def clear_documents(session_id: str = Depends(require_session_id)):
+    """Clear all documents from the caller's session"""
     try:
-        global current_session_documents
-        vector_store.clear_store()
-        current_session_documents = {}  # Clear session tracking
-        logger.info("Vector store and session documents cleared successfully")
+        session_stores.delete(session_id)
+        logger.info("Session documents cleared successfully")
         return {
             "message": "All documents cleared successfully",
             "timestamp": datetime.now().isoformat(),
@@ -449,13 +438,14 @@ async def clear_documents():
 
 # Get Current Session Documents
 @app.get("/current-session-documents")
-async def get_current_session_documents():
-    """Get documents uploaded in current session"""
+async def get_current_session_documents(session_id: str = Depends(require_session_id)):
+    """Get documents in the caller's session (persisted across server restarts)"""
     try:
+        details = _store(session_id).document_summaries()
         return {
-            "documents": list(current_session_documents.keys()),
-            "total": len(current_session_documents),
-            "details": current_session_documents
+            "documents": list(details.keys()),
+            "total": len(details),
+            "details": details
         }
     except Exception as e:
         logger.error(f"Current session documents error: {e}")
@@ -463,17 +453,19 @@ async def get_current_session_documents():
 
 # Get Vector Store Info
 @app.get("/vector-store-info")
-async def get_vector_store_info():
-    """Get information about the vector store"""
+async def get_vector_store_info(session_id: str = Depends(require_session_id)):
+    """Get information about the caller's vector store"""
     try:
-        documents = vector_store.get_all_documents()
+        store = _store(session_id)
+        documents = store.get_all_documents()
+        summaries = store.document_summaries()
         
         return {
-            "has_documents": vector_store.has_documents(),
+            "has_documents": store.has_documents(),
             "total_documents": len(documents),
-            "unique_sources": len(set(doc.metadata["source"] for doc in documents)),
+            "unique_sources": len(summaries),
             "total_chunks": len(documents),
-            "current_session_documents": list(current_session_documents.keys())
+            "current_session_documents": list(summaries.keys())
         }
     except Exception as e:
         logger.error(f"Vector store info error: {e}")
@@ -482,10 +474,10 @@ async def get_vector_store_info():
 # ===== CONVERSATION MEMORY ENDPOINTS =====
 
 @app.post("/conversations")
-async def create_conversation(conversation_data: dict):
-    """Create a new conversation"""
+async def create_conversation(conversation_data: dict, session_id: str = Depends(require_session_id)):
+    """Create a new conversation owned by the caller's session"""
     try:
-        user_id = conversation_data.get("user_id", "default")
+        user_id = session_id
         title = conversation_data.get("title", None)
         document_context = conversation_data.get("document_context", [])
         
@@ -504,8 +496,9 @@ async def create_conversation(conversation_data: dict):
         raise HTTPException(status_code=500, detail=f"Error creating conversation: {str(e)}")
 
 @app.get("/conversations/{conversation_id}/history")
-async def get_conversation_history(conversation_id: str, limit: int = 10):
+async def get_conversation_history(conversation_id: str, limit: int = 10, session_id: str = Depends(require_session_id)):
     """Get conversation history"""
+    _require_own_conversation(conversation_id, session_id)
     try:
         history = conversation_memory.get_conversation_history(conversation_id, limit)
         context = conversation_memory.get_conversation_context(conversation_id)
@@ -520,8 +513,9 @@ async def get_conversation_history(conversation_id: str, limit: int = 10):
         raise HTTPException(status_code=500, detail=f"Error getting conversation history: {str(e)}")
 
 @app.get("/conversations/user/{user_id}")
-async def get_user_conversations(user_id: str, limit: int = 20):
-    """Get all conversations for a user"""
+async def get_user_conversations(user_id: str, limit: int = 20, session_id: str = Depends(require_session_id)):
+    """Get all conversations for a user (only the caller's own)"""
+    _require_self(user_id, session_id)
     try:
         conversations = conversation_memory.get_user_conversations(user_id, limit)
         return {
@@ -533,8 +527,9 @@ async def get_user_conversations(user_id: str, limit: int = 20):
         raise HTTPException(status_code=500, detail=f"Error getting user conversations: {str(e)}")
 
 @app.delete("/conversations/{conversation_id}")
-async def delete_conversation(conversation_id: str):
+async def delete_conversation(conversation_id: str, session_id: str = Depends(require_session_id)):
     """Delete a conversation"""
+    _require_own_conversation(conversation_id, session_id)
     try:
         conversation_memory.delete_conversation(conversation_id)
         return {"message": f"Conversation {conversation_id} deleted successfully"}
@@ -545,8 +540,9 @@ async def delete_conversation(conversation_id: str):
 # ===== LEARNING ANALYTICS ENDPOINTS =====
 
 @app.get("/analytics/user/{user_id}")
-async def get_user_analytics(user_id: str):
-    """Get comprehensive analytics for a user"""
+async def get_user_analytics(user_id: str, session_id: str = Depends(require_session_id)):
+    """Get comprehensive analytics for a user (only the caller's own)"""
+    _require_self(user_id, session_id)
     try:
         analytics = learning_analytics.get_user_analytics(user_id)
         return analytics
@@ -579,10 +575,10 @@ async def get_performance_metrics(metric_name: str = None, days: int = 30):
         raise HTTPException(status_code=500, detail=f"Error getting performance metrics: {str(e)}")
 
 @app.post("/analytics/track-quiz")
-async def track_quiz_completion(quiz_data: dict):
+async def track_quiz_completion(quiz_data: dict, session_id: str = Depends(require_session_id)):
     """Track quiz completion analytics"""
     try:
-        user_id = quiz_data.get("user_id", "default")
+        user_id = session_id
         quiz_score = quiz_data.get("quiz_score", 0)
         total_questions = quiz_data.get("total_questions", 1)
         score_percentage = quiz_data.get("score_percentage", 0)
@@ -606,7 +602,6 @@ async def track_quiz_completion(quiz_data: dict):
             metric_name="quiz_score_percentage",
             value=score_percentage,
             context={
-                "user_id": user_id,
                 "quiz_score": quiz_score,
                 "total_questions": total_questions
             }
@@ -620,10 +615,16 @@ async def track_quiz_completion(quiz_data: dict):
 # ===== VOICE AGENT ENDPOINTS =====
 
 @app.websocket("/voice/ws/{client_id}")
-async def websocket_voice_endpoint(websocket: WebSocket, client_id: str):
-    """WebSocket endpoint for real-time voice interaction"""
+async def websocket_voice_endpoint(websocket: WebSocket, client_id: str, session_id: str = ""):
+    """WebSocket endpoint for real-time voice interaction.
+
+    Browsers can't set headers on WebSockets, so the session id comes as ?session_id=.
+    """
+    if not is_valid_session_id(session_id):
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
     try:
-        await voice_agent.connect(websocket, client_id)
+        await voice_agent.connect(websocket, client_id, session_id)
         
         while True:
             try:

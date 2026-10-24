@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { FileText, Search, Trash2, MessageSquare, Download, Grid3x3, List } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import API_CONFIG from "@/lib/api";
+import { errorText, fetchChecked } from "@/lib/http";
 import { Skeleton } from "@/components/ui/skeleton";
 import PageHeader from "@/components/app/PageHeader";
 import IconBadge from "@/components/app/IconBadge";
@@ -70,31 +71,18 @@ const DocumentsView = ({ documents, isLoading = false, error = null, onRetry, on
   const handleDelete = async (filename: string) => {
     if (window.confirm(`Are you sure you want to delete "${filename}"?`)) {
       try {
-        // Call backend API to delete the document
-        const response = await fetch(API_CONFIG.ENDPOINTS.DELETE_DOCUMENT(filename), {
-          method: "DELETE",
+        await fetchChecked(API_CONFIG.ENDPOINTS.DELETE_DOCUMENT(filename), { method: "DELETE" });
+        // Call parent's onDelete to update frontend state
+        onDelete(filename);
+        toast({
+          title: "Document deleted",
+          description: `${filename} has been removed from the system`,
         });
-
-        if (response.ok) {
-          // Call parent's onDelete to update frontend state
-          onDelete(filename);
-          toast({
-            title: "Document deleted",
-            description: `${filename} has been removed from the system`,
-          });
-        } else {
-          const errorData = await response.json();
-          toast({
-            title: "Delete failed",
-            description: errorData.detail || "Failed to delete document",
-            variant: "destructive",
-          });
-        }
       } catch (error) {
         console.error("Error deleting document:", error);
         toast({
           title: "Delete failed",
-          description: "Network error while deleting document",
+          description: errorText(error, "Failed to delete document"),
           variant: "destructive",
         });
       }

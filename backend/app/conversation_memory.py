@@ -5,6 +5,7 @@ Provides persistent conversation history and context awareness
 
 import json
 import os
+import uuid
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass, asdict
@@ -111,7 +112,8 @@ class ConversationMemory:
     
     def create_conversation(self, user_id: str, title: str = None, document_context: List[str] = None) -> str:
         """Create a new conversation"""
-        conv_id = f"conv_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{user_id}"
+        # Random suffix, never the user id: user ids are session ids, which act as credentials
+        conv_id = f"conv_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:12]}"
         
         conversation = Conversation(
             id=conv_id,
@@ -172,6 +174,11 @@ class ConversationMemory:
             for msg in recent_messages
         ]
     
+    def owns(self, conversation_id: str, user_id: str) -> bool:
+        """True if the conversation exists and belongs to user_id"""
+        conversation = self.conversations.get(conversation_id)
+        return conversation is not None and conversation.user_id == user_id
+
     def get_conversation_context(self, conversation_id: str) -> Dict[str, Any]:
         """Get conversation context for AI"""
         if conversation_id not in self.conversations:

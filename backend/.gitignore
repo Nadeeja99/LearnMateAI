@@ -60,6 +60,11 @@ data/uploads/*
 !data/uploads/.gitkeep
 data/vectorstore/*
 !data/vectorstore/.gitkeep
+# Runtime data: per-session indexes, conversations, analytics (never commit user data)
+data/sessions/
+data/conversations/
+data/analytics/
+data/vectorstore_metadata.pkl
 
 # Testing
 .pytest_cache/

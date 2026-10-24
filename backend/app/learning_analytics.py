@@ -351,7 +351,8 @@ class LearningAnalytics:
                 "metric_name": metric.metric_name,
                 "value": metric.value,
                 "timestamp": metric.timestamp.isoformat(),
-                "context": metric.context
+                # Metrics are public; user ids are session ids and must not leak (older records stored them)
+                "context": {k: v for k, v in (metric.context or {}).items() if k != "user_id"}
             }
             for metric in filtered_metrics
         ]

@@ -4,6 +4,7 @@ import { Progress } from "@/components/ui/progress";
 import { Upload, File } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import API_CONFIG from "@/lib/api";
+import { fetchChecked } from "@/lib/http";
 import IconBadge from "@/components/app/IconBadge";
 
 interface UploadSectionProps {
@@ -56,28 +57,15 @@ const UploadSection = ({ onUploadSuccess }: UploadSectionProps) => {
       const formData = new FormData();
       formData.append("file", file);
 
-      // TODO: Replace with actual API endpoint
-      const response = await fetch(API_CONFIG.ENDPOINTS.UPLOAD, {
-        method: "POST",
-        body: formData,
-      });
+      await fetchChecked(API_CONFIG.ENDPOINTS.UPLOAD, { method: "POST", body: formData });
 
       clearInterval(progressInterval);
       setUploadProgress(100);
-
-      if (response.ok) {
-        const data = await response.json();
-        
-        toast({
-          title: "Upload successful!",
-          description: `${file.name} has been processed`,
-        });
-        
-        onUploadSuccess(file.name);
-      } else {
-        const errorText = await response.text();
-        throw new Error(`Upload failed: ${response.status} ${errorText}`);
-      }
+      toast({
+        title: "Upload successful!",
+        description: `${file.name} has been processed`,
+      });
+      onUploadSuccess(file.name);
     } catch (error) {
       clearInterval(progressInterval);
       console.error("Upload error:", error);

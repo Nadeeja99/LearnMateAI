@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import API_CONFIG from "@/lib/api";
 import { errorText, requestJson } from "@/lib/http";
+import { getSessionId } from "@/lib/session";
 import type { Conversation } from "@/components/app/chat/types";
 
-/** Loads the user's conversation list with loading and error state. */
-export function useConversations(userId = "default") {
+/** Loads the current session's conversation list with loading and error state. */
+export function useConversations(userId = getSessionId()) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

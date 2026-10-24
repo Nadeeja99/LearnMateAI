@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import API_CONFIG from "@/lib/api";
 import { errorText, requestJson } from "@/lib/http";
+import { getSessionId } from "@/lib/session";
 import PageHeader from "@/components/app/PageHeader";
 import EmptyState from "@/components/app/EmptyState";
 import InlineError from "@/components/app/InlineError";
@@ -24,7 +25,7 @@ const AnalyticsDashboard = () => {
     setIsLoading(true);
     setError(null);
     const [user, global] = await Promise.allSettled([
-      requestJson<UserAnalytics>(API_CONFIG.ENDPOINTS.ANALYTICS_USER("default")),
+      requestJson<UserAnalytics>(API_CONFIG.ENDPOINTS.ANALYTICS_USER(getSessionId())),
       requestJson<GlobalAnalytics>(API_CONFIG.ENDPOINTS.ANALYTICS_GLOBAL),
     ]);
     if (user.status === "fulfilled") setUserAnalytics(user.value);

@@ -1,4 +1,5 @@
 /** JSON request helper: checks response.ok, surfaces FastAPI `detail`, and supports AbortSignal. */
+import { getSessionId } from "@/lib/session";
 
 export class ApiError extends Error {
   constructor(
@@ -18,13 +19,19 @@ export const errorText = (error: unknown, fallback = "Something went wrong. Plea
 
 export type RequestOptions = Omit<RequestInit, "body"> & { json?: unknown; body?: BodyInit };
 
-/** fetch() that throws ApiError for network failures and non-2xx responses (AbortError passes through). */
+/**
+ * fetch() that sends the session header and throws ApiError for network failures and
+ * non-2xx responses (AbortError passes through).
+ */
 export async function fetchChecked(url: string, { json, headers, body, ...init }: RequestOptions = {}): Promise<Response> {
+  const sessionHeaders: Record<string, string> = { "X-Session-Id": getSessionId() };
+  if (json !== undefined) sessionHeaders["Content-Type"] = "application/json";
+
   let response: Response;
   try {
     response = await fetch(url, {
       ...init,
-      headers: json === undefined ? headers : { "Content-Type": "application/json", ...headers },
+      headers: { ...sessionHeaders, ...(headers as Record<string, string> | undefined) },
       body: json === undefined ? body : JSON.stringify(json),
     });
   } catch (error) {

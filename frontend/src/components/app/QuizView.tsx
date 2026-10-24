@@ -96,7 +96,6 @@ const QuizView = ({ documents }: QuizViewProps) => {
       await requestJson(API_CONFIG.ENDPOINTS.TRACK_QUIZ, {
         method: "POST",
         json: {
-          user_id: "default",
           quiz_score: score,
           total_questions: questions.length,
           score_percentage: getScorePercentage(),

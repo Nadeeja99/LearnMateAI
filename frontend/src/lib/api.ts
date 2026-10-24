@@ -1,4 +1,5 @@
 // API Configuration
+import { getSessionId } from '@/lib/session';
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 // ws:// for http:// backends (local dev), wss:// for https://
 const WS_BASE_URL = API_BASE_URL.replace(/^http/, 'ws');
@@ -22,7 +23,8 @@ export const API_CONFIG = {
     ANALYTICS_GLOBAL: `${API_BASE_URL}/analytics/global`,
     ANALYTICS_PERFORMANCE: `${API_BASE_URL}/analytics/performance-metrics`,
     TRACK_QUIZ: `${API_BASE_URL}/analytics/track-quiz`,
-    VOICE_WS: (clientId: string) => `${WS_BASE_URL}/voice/ws/${clientId}`,
+    // WebSockets can't carry custom headers, so the session id travels as a query param
+    VOICE_WS: (clientId: string) => `${WS_BASE_URL}/voice/ws/${clientId}?session_id=${encodeURIComponent(getSessionId())}`,
     VOICE_STATUS: `${API_BASE_URL}/voice/status`,
     VOICE_CONNECTIONS: `${API_BASE_URL}/voice/connections`,
     VOICE_TEST: `${API_BASE_URL}/voice/test`,

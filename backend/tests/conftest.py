@@ -84,3 +84,6 @@ class FakeVectorStore:
 
     def get_all_documents(self):
         return []
+
+    def document_summaries(self):
+        return {"biology.pdf": {"filename": "biology.pdf", "chunks_count": len(self.results), "file_size": 1, "uploaded_at": None}}

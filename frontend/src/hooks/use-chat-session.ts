@@ -43,7 +43,7 @@ export function useChatSession(documents: string[], { onSettled }: ChatSessionOp
     try {
       const data = await requestJson<{ conversation_id: string }>(API_CONFIG.ENDPOINTS.CONVERSATIONS, {
         method: "POST",
-        json: { user_id: "default", title: `Chat ${new Date().toLocaleString()}`, document_context: documents },
+        json: { title: `Chat ${new Date().toLocaleString()}`, document_context: documents },
       });
       setCurrentConversationId(data.conversation_id);
       setMessages([]);
@@ -104,7 +104,7 @@ export function useChatSession(documents: string[], { onSettled }: ChatSessionOp
     try {
       const result = await streamCompletion(
         API_CONFIG.ENDPOINTS.ASK_STREAM,
-        { question, user_id: "default", conversation_id: conversationId },
+        { question, conversation_id: conversationId },
         { signal: request.begin(), onText: renderText },
       );
       renderText.flush();

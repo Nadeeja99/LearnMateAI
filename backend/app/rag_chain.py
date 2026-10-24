@@ -1,4 +1,5 @@
 import asyncio
+import copy
 import json
 import logging
 import os
@@ -60,6 +61,12 @@ class RAGChain:
         # 20 questions with explanations need far more than the chat budget
         self.quiz_llm = self._make_llm(openai_api_key, int(os.getenv("OPENAI_QUIZ_MAX_TOKENS", "3500")))
         self.vector_store = vector_store
+
+    def with_store(self, vector_store) -> "RAGChain":
+        """A shallow copy bound to another vector store (e.g. one session's index); LLM clients are shared"""
+        bound = copy.copy(self)
+        bound.vector_store = vector_store
+        return bound
 
     def _make_llm(self, openai_api_key: str, max_tokens: int) -> ChatOpenAI:
         return ChatOpenAI(
@@ -425,7 +432,8 @@ class RAGChain:
         sources = [s["source"] for s in telemetry["sources"]]
         stored_telemetry = {k: v for k, v in telemetry.items() if k != "system_prompt"}
 
-        if conversation_memory:
+        # "default" means no conversation was created, so there is nothing to append to
+        if conversation_memory and conversation_id != "default":
             conversation_memory.add_message(conversation_id, "user", question, {"document_names": document_names})
             conversation_memory.add_message(
                 conversation_id,

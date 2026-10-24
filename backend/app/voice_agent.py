@@ -7,7 +7,7 @@ import asyncio
 import json
 import logging
 from datetime import datetime
-from typing import Dict, Any, Optional
+from typing import Callable, Dict, Any, Optional
 from fastapi import WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse
 import io
@@ -25,19 +25,23 @@ logger = logging.getLogger(__name__)
 class VoiceAgent:
     """Real-time voice agent for PDF analysis and interaction"""
     
-    def __init__(self, rag_chain: RAGChain, voice_processing_service: VoiceProcessingService):
+    def __init__(self, rag_chain: RAGChain, voice_processing_service: VoiceProcessingService,
+                 chain_for_session: Optional[Callable[[str], RAGChain]] = None):
         self.rag_chain = rag_chain
+        # Resolves a session id to a chain bound to that session's documents
+        self.chain_for_session = chain_for_session or (lambda session_id: rag_chain)
         self.voice_processing = voice_processing_service
         self.active_connections: Dict[str, WebSocket] = {}
         self.conversation_contexts: Dict[str, Dict[str, Any]] = {}
         
-    async def connect(self, websocket: WebSocket, client_id: str):
+    async def connect(self, websocket: WebSocket, client_id: str, session_id: str):
         """Handle new WebSocket connection"""
         await websocket.accept()
         self.active_connections[client_id] = websocket
         self.conversation_contexts[client_id] = {
             "conversation_id": None,
-            "user_id": "default",
+            "user_id": session_id,
+            "session_id": session_id,
             "last_interaction": datetime.now(),
             "voice_enabled": True
         }
@@ -175,10 +179,10 @@ class VoiceAgent:
                 context["conversation_id"] = conversation_id
                 self.conversation_contexts[client_id] = context
             
-            # Process through RAG system
-            result = await self.rag_chain.answer_question(
+            # Process through RAG system, limited to this session's documents
+            result = await self.chain_for_session(context["session_id"]).answer_question(
                 question=query,
-                document_names=None,  # Use all documents
+                document_names=None,  # All documents in the session's own index
                 conversation_id=conversation_id,
                 user_id=user_id
             )

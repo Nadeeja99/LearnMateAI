@@ -82,7 +82,7 @@ dist
 
 # Gatsby files
 .cache/
-public
+# (Gatsby's `public` rule removed: it ignored frontend/public, so favicons and robots.txt never deployed)
 
 # Vuepress build output
 .vuepress/dist

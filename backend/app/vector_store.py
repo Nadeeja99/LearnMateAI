@@ -1,6 +1,7 @@
 import logging
 import os
 import pickle
+import threading
 import faiss
 import numpy as np
 from typing import List, Dict, Any, Optional
@@ -11,23 +12,31 @@ from langchain_community.vectorstores import FAISS
 logger = logging.getLogger(__name__)
 
 class VectorStore:
-    """Handle vector storage and retrieval using FAISS"""
+    """Handle vector storage and retrieval using FAISS.
+
+    Each instance owns one directory (one per session, see sessions.py). Files are only
+    created on the first save, so read-only visitors leave nothing on disk.
+    """
     
-    def __init__(self, openai_api_key: str):
+    def __init__(self, openai_api_key: str, store_dir: str = "data/vectorstore"):
         self.embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
         self.vector_store: Optional[FAISS] = None
         self.documents: List[Document] = []
-        self.store_path = "data/vectorstore"
-        self.metadata_path = "data/vectorstore_metadata.pkl"
-        
-        # Create directory if it doesn't exist
-        os.makedirs(self.store_path, exist_ok=True)
+        self.store_dir = store_dir
+        self.store_path = os.path.join(store_dir, "index")
+        self.metadata_path = os.path.join(store_dir, "metadata.pkl")
+        # Searches run in worker threads (asyncio.to_thread), so guard concurrent mutation
+        self._lock = threading.RLock()
         
         # Try to load existing vector store
         self.load_vector_store()
     
     def add_documents(self, documents: List[Document]) -> None:
         """Add documents to the vector store"""
+        with self._lock:
+            self._add_documents(documents)
+
+    def _add_documents(self, documents: List[Document]) -> None:
         try:
             if not documents:
                 logger.warning("No documents to add")
@@ -60,6 +69,10 @@ class VectorStore:
     
     def search_similar(self, query: str, k: int = 5, document_names: Optional[List[str]] = None) -> List[Dict]:
         """Search for similar documents, optionally filtered by document names"""
+        with self._lock:
+            return self._search_similar(query, k, document_names)
+
+    def _search_similar(self, query: str, k: int, document_names: Optional[List[str]]) -> List[Dict]:
         try:
             if self.vector_store is None:
                 logger.warning("No vector store available")
@@ -102,9 +115,27 @@ class VectorStore:
     def get_all_documents(self) -> List[Document]:
         """Get all documents in the vector store"""
         return self.documents.copy()
+
+    def document_summaries(self) -> Dict[str, Dict[str, Any]]:
+        """Per-file summary derived from chunk metadata, in upload order"""
+        summaries: Dict[str, Dict[str, Any]] = {}
+        for doc in self.documents:
+            name = doc.metadata.get("source", "unknown")
+            entry = summaries.setdefault(name, {
+                "filename": name,
+                "chunks_count": 0,
+                "file_size": doc.metadata.get("file_size"),
+                "uploaded_at": doc.metadata.get("uploaded_at"),
+            })
+            entry["chunks_count"] += 1
+        return summaries
     
     def clear_store(self) -> None:
         """Clear the vector store"""
+        with self._lock:
+            self._clear_store()
+
+    def _clear_store(self) -> None:
         try:
             self.vector_store = None
             self.documents = []
@@ -126,6 +157,7 @@ class VectorStore:
         """Save vector store to disk"""
         try:
             if self.vector_store is not None:
+                os.makedirs(self.store_dir, exist_ok=True)
                 self.vector_store.save_local(self.store_path)
                 
                 # Save metadata separately
@@ -139,6 +171,10 @@ class VectorStore:
     
     def delete_document(self, document_name: str) -> None:
         """Delete a specific document from the vector store"""
+        with self._lock:
+            self._delete_document(document_name)
+
+    def _delete_document(self, document_name: str) -> None:
         try:
             if not self.vector_store:
                 logger.warning("No vector store to delete from")
@@ -168,7 +204,7 @@ class VectorStore:
                 logger.info(f"Document '{document_name}' deleted. {len(self.documents)} documents remaining")
             else:
                 # No documents left, clear the store
-                self.clear_store()
+                self._clear_store()
                 logger.info(f"Document '{document_name}' deleted. Vector store is now empty")
                 
         except Exception as e:
