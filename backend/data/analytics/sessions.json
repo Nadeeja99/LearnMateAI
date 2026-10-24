@@ -66,5 +66,72 @@
       "conversation_id": "conv_20251018_173837_default",
       "voice_enabled": true
     }
+  },
+  {
+    "id": "session_20261024_125553_515462",
+    "user_id": "default",
+    "session_type": "upload",
+    "document_name": "AKILA_PERERA_CV.pdf",
+    "duration_seconds": 0,
+    "timestamp": "2026-10-24T12:55:53.515497",
+    "metadata": {
+      "file_size": 58835,
+      "chunks_count": 3,
+      "file_type": "pdf"
+    }
+  },
+  {
+    "id": "session_20261024_125943_183139",
+    "user_id": "default",
+    "session_type": "upload",
+    "document_name": "AKILA_PERERA_CV.pdf",
+    "duration_seconds": 0,
+    "timestamp": "2026-10-24T12:59:43.183172",
+    "metadata": {
+      "file_size": 58835,
+      "chunks_count": 3,
+      "file_type": "pdf"
+    }
+  },
+  {
+    "id": "session_20261024_125952_971850",
+    "user_id": "default",
+    "session_type": "chat",
+    "document_name": "AKILA_PERERA_CV.pdf",
+    "duration_seconds": 0,
+    "timestamp": "2026-10-24T12:59:52.971863",
+    "metadata": {
+      "question_length": 27,
+      "answer_length": 1069,
+      "sources_count": 3,
+      "conversation_id": "conv_20261024_125950_default"
+    }
+  },
+  {
+    "id": "session_20261024_130137_452129",
+    "user_id": "default",
+    "session_type": "summary",
+    "document_name": "AKILA_PERERA_CV.pdf",
+    "duration_seconds": 0,
+    "timestamp": "2026-10-24T13:01:37.452239",
+    "metadata": {
+      "summary_length": 2278,
+      "document_count": 1,
+      "context_length": 2855
+    }
+  },
+  {
+    "id": "session_20261024_130228_066864",
+    "user_id": "default",
+    "session_type": "quiz",
+    "document_name": null,
+    "duration_seconds": 0,
+    "timestamp": "2026-10-24T13:02:28.066907",
+    "metadata": {
+      "quiz_score": 1,
+      "total_questions": 4,
+      "score_percentage": 25,
+      "completed_at": "2026-10-24T07:32:28.061Z"
+    }
   }
 ]

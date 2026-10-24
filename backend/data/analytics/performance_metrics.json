@@ -1,1 +1,12 @@
-[]
+[
+  {
+    "metric_name": "quiz_score_percentage",
+    "value": 25,
+    "timestamp": "2026-10-24T13:02:28.071063",
+    "context": {
+      "user_id": "default",
+      "quiz_score": 1,
+      "total_questions": 4
+    }
+  }
+]

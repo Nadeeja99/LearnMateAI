@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import API_CONFIG from "@/lib/api";
 import PageHeader from "@/components/app/PageHeader";
-import IconBadge from "@/components/app/IconBadge";
+import EmptyState from "@/components/app/EmptyState";
 import { 
   Mic, 
   MicOff, 
@@ -418,15 +418,16 @@ const VoiceChat = ({ documents }: VoiceChatProps) => {
       <Card className="mb-4 flex-1 overflow-hidden">
         <ScrollArea className="h-full" ref={scrollRef}>
           {messages.length === 0 ? (
-            <div className="flex min-h-full flex-col items-center justify-center gap-4 px-6 py-12 text-center">
-              <IconBadge icon={MessageSquare} size="lg" tone="primary" />
-              <div className="space-y-1">
-                <h3 className="text-lg font-semibold">Start a voice chat</h3>
-                <p className="max-w-sm text-sm text-muted-foreground">
-                  Connect to the voice agent and start speaking to analyze your documents
-                </p>
-              </div>
-            </div>
+            <EmptyState
+              icon={MessageSquare}
+              tone="primary"
+              title={isConnected ? "Ready when you are" : "Start a voice chat"}
+              description={
+                isConnected
+                  ? "Press Start speaking and ask a question about your documents."
+                  : "Connect to the voice agent and start speaking to analyze your documents."
+              }
+            />
           ) : (
             <div className="space-y-4 p-4 sm:p-6">
               {messages.map((message) => (

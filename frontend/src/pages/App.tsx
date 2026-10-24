@@ -5,7 +5,10 @@ import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import API_CONFIG from "@/lib/api";
-import ChatView from "@/components/app/ChatView";
+import { errorText, requestJson } from "@/lib/http";
+import { Skeleton } from "@/components/ui/skeleton";
+import ErrorBoundary from "@/components/app/ErrorBoundary";
+import ChatView from "@/components/app/chat/ChatView";
 import SummaryView from "@/components/app/SummaryView";
 import QuizView from "@/components/app/QuizView";
 import DocumentsView from "@/components/app/DocumentsView";
@@ -30,6 +33,8 @@ const AppPage = () => {
   const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState<Tab>("chat");
   const [documents, setDocuments] = useState<string[]>([]);
+  const [documentsLoading, setDocumentsLoading] = useState(true);
+  const [documentsError, setDocumentsError] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleUploadSuccess = (filename: string) => {
@@ -45,12 +50,15 @@ const AppPage = () => {
   };
 
   const fetchCurrentSessionDocuments = async () => {
+    setDocumentsError(null);
     try {
-      const response = await fetch(API_CONFIG.ENDPOINTS.CURRENT_SESSION_DOCUMENTS);
-      const data = await response.json();
+      const data = await requestJson<{ documents?: string[] }>(API_CONFIG.ENDPOINTS.CURRENT_SESSION_DOCUMENTS);
       setDocuments(data.documents || []);
     } catch (error) {
       console.error("Error fetching current session documents:", error);
+      setDocumentsError(errorText(error, "Couldn't load session documents"));
+    } finally {
+      setDocumentsLoading(false);
     }
   };
 
@@ -89,7 +97,7 @@ const AppPage = () => {
 
           <div className="flex items-center gap-1">
             <span className="mr-2 hidden rounded-full border px-2.5 py-0.5 text-xs text-muted-foreground sm:inline-block">
-              {documents.length} {documents.length === 1 ? "document" : "documents"} in session
+              {documentsLoading ? "Loading…" : `${documents.length} ${documents.length === 1 ? "document" : "documents"} in session`}
             </span>
             <Button
               variant="ghost"
@@ -162,7 +170,15 @@ const AppPage = () => {
               ))}
             </nav>
 
-            {documents.length > 0 && (
+            {documentsLoading && (
+              <div className="space-y-2 px-3" aria-busy="true">
+                <Skeleton className="h-3 w-28" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-4/5" />
+              </div>
+            )}
+
+            {!documentsLoading && documents.length > 0 && (
               <div className="space-y-2">
                 <h3 className="px-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">Recent Documents</h3>
                 <ul className="space-y-0.5">
@@ -181,18 +197,24 @@ const AppPage = () => {
         {/* Main Content Area */}
         <main className="min-w-0 flex-1 overflow-y-auto">
           <div className="mx-auto max-w-5xl px-4 py-6 sm:px-8 sm:py-10">
-            {activeTab === "chat" && <ChatView documents={documents} />}
-            {activeTab === "summary" && <SummaryView documents={documents} />}
-            {activeTab === "quiz" && <QuizView documents={documents} />}
-            {activeTab === "documents" && (
-              <DocumentsView
-                documents={documents}
-                onDelete={handleDeleteDocument}
-                onNavigateToChat={() => setActiveTab("chat")}
-              />
-            )}
-            {activeTab === "analytics" && <AnalyticsDashboard />}
-            {activeTab === "voice" && <VoiceChat documents={documents} />}
+            {/* Keyed so switching tabs clears a crashed view */}
+            <ErrorBoundary key={activeTab} variant="section">
+              {activeTab === "chat" && <ChatView documents={documents} />}
+              {activeTab === "summary" && <SummaryView documents={documents} />}
+              {activeTab === "quiz" && <QuizView documents={documents} />}
+              {activeTab === "documents" && (
+                <DocumentsView
+                  documents={documents}
+                  isLoading={documentsLoading}
+                  error={documentsError}
+                  onRetry={fetchCurrentSessionDocuments}
+                  onDelete={handleDeleteDocument}
+                  onNavigateToChat={() => setActiveTab("chat")}
+                />
+              )}
+              {activeTab === "analytics" && <AnalyticsDashboard />}
+              {activeTab === "voice" && <VoiceChat documents={documents} />}
+            </ErrorBoundary>
           </div>
         </main>
       </div>

@@ -1,4 +1,5 @@
 import logging
+import os
 from typing import List, Dict, Any, Optional
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import PromptTemplate
@@ -26,7 +27,7 @@ class RAGChain:
     def __init__(self, openai_api_key: str, vector_store):
         self.llm = ChatOpenAI(
             openai_api_key=openai_api_key,
-            model_name="gpt-3.5-turbo",
+            model_name=os.getenv("OPENAI_CHAT_MODEL", "gpt-5.4-mini"),
             temperature=0.7,
             max_tokens=500
         )

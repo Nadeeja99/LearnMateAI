@@ -5,16 +5,48 @@ import { Input } from "@/components/ui/input";
 import { FileText, Search, Trash2, MessageSquare, Download, Grid3x3, List } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import API_CONFIG from "@/lib/api";
+import { Skeleton } from "@/components/ui/skeleton";
 import PageHeader from "@/components/app/PageHeader";
 import IconBadge from "@/components/app/IconBadge";
+import EmptyState from "@/components/app/EmptyState";
+import InlineError from "@/components/app/InlineError";
 
 interface DocumentsViewProps {
   documents: string[];
+  isLoading?: boolean;
+  error?: string | null;
+  onRetry?: () => void;
   onDelete: (filename: string) => void;
   onNavigateToChat?: () => void;
 }
 
-const DocumentsView = ({ documents, onDelete, onNavigateToChat }: DocumentsViewProps) => {
+const DocumentsSkeleton = ({ viewMode }: { viewMode: "grid" | "list" }) =>
+  viewMode === "grid" ? (
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-busy="true" aria-label="Loading documents">
+      {Array.from({ length: 3 }, (_, index) => (
+        <Card key={index} className="p-5">
+          <Skeleton className="mb-5 h-10 w-10 rounded-lg" />
+          <Skeleton className="h-4 w-3/4" />
+          <Skeleton className="mt-2 h-3 w-1/3" />
+          <Skeleton className="mt-5 h-9 w-full" />
+        </Card>
+      ))}
+    </div>
+  ) : (
+    <Card className="divide-y" aria-busy="true" aria-label="Loading documents">
+      {Array.from({ length: 3 }, (_, index) => (
+        <div key={index} className="flex items-center gap-4 p-4">
+          <Skeleton className="h-8 w-8 rounded-md" />
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-4 w-1/2" />
+            <Skeleton className="h-3 w-1/4" />
+          </div>
+        </div>
+      ))}
+    </Card>
+  );
+
+const DocumentsView = ({ documents, isLoading = false, error = null, onRetry, onDelete, onNavigateToChat }: DocumentsViewProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const { toast } = useToast();
@@ -73,7 +105,7 @@ const DocumentsView = ({ documents, onDelete, onNavigateToChat }: DocumentsViewP
     <div>
       <PageHeader
         title="My documents"
-        description={`${documents.length} ${documents.length === 1 ? "document" : "documents"} uploaded`}
+        description={isLoading ? "Loading documents…" : `${documents.length} ${documents.length === 1 ? "document" : "documents"} uploaded`}
         actions={
           <div className="flex rounded-lg border p-0.5" role="group" aria-label="View mode">
             <Button
@@ -111,18 +143,27 @@ const DocumentsView = ({ documents, onDelete, onNavigateToChat }: DocumentsViewP
         />
       </div>
 
+      {error && <InlineError className="mb-6" title="Couldn't load documents" message={error} onRetry={onRetry} />}
+
       {/* Documents */}
-      {filteredDocuments.length === 0 ? (
-        <Card className="px-6 py-16">
-          <div className="space-y-4 text-center">
-            <IconBadge icon={FileText} size="lg" className="mx-auto" />
-            <div className="space-y-1">
-              <h3 className="text-lg font-semibold">{searchQuery ? "No documents found" : "No documents yet"}</h3>
-              <p className="text-sm text-muted-foreground">
-                {searchQuery ? "Try a different search term" : "Upload your first document to get started"}
-              </p>
-            </div>
-          </div>
+      {isLoading ? (
+        <DocumentsSkeleton viewMode={viewMode} />
+      ) : filteredDocuments.length === 0 ? (
+        <Card>
+          <EmptyState
+            icon={searchQuery ? Search : FileText}
+            title={searchQuery ? "No documents found" : "No documents yet"}
+            description={
+              searchQuery ? `Nothing matches "${searchQuery}". Try a different search term.` : "Upload a PDF from the sidebar to get started."
+            }
+            action={
+              searchQuery && (
+                <Button variant="outline" size="sm" onClick={() => setSearchQuery("")}>
+                  Clear search
+                </Button>
+              )
+            }
+          />
         </Card>
       ) : viewMode === "grid" ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
